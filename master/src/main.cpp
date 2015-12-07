@@ -29,6 +29,7 @@
 #include <QSqlError>
 #include <QUrl>
 #include <getopt.h>
+#include <unistd.h>
 
 #include "ntgMaster.h"
 #include "ntgDaemon.h"
