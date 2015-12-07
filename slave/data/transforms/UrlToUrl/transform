@@ -1,0 +1,32 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import re, urllib, sys
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+website = e_values["value"]
+regexT = re.compile('<title>(.*?)</title>')
+
+
+result=[]
+regex = re.compile('<a.*?\shref=\"(.{2,6}://.*?)\"\s?.*?>.*?</a>',re.VERBOSE)
+url = urllib.urlopen(website)
+
+codehtml = url.readlines()
+for line in codehtml:
+    urls = regex.findall(line)
+    for e in urls:
+        if e not in result:
+            result.append(e)
+            val = {}
+            codehtml = urllib.urlopen(e).read()
+            titlere = regexT.search(codehtml)
+            if titlere:
+                val["title"]= unicode(titlere.group(1), 'utf-8')
+            val["value"] = unicode(e, 'utf-8')
+            write_result("url", val)
+            sys.stdout.flush()
+            
+

@@ -1,0 +1,16 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="IpBlockToPorts" longName="To Ports [Nmap]" type="generic" >
+  <description>Transforms an IP or an IP range to a list of ports</description>
+  <parameters>
+    <param name="aggressiveness" longName="Nmap aggressiveness" description="Nmap -T option's value" default="5" optional="true" level="advanced" format="int">
+      <int min="1" max="5"/>
+    </param>
+  </parameters>
+  <input>
+    <entity type="ip-block" />
+  </input>
+  <output>
+    <entity type="port" />
+  </output>
+</transform>

@@ -1,0 +1,194 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import sys, re, urllib, os
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+def whoisfr(string):
+  regex= re.compile('.*?:\s*(\w.*)',re.VERBOSE)
+  adBool = False
+  id = 0
+  dic = {}
+  for line in lines :
+    if line.find('contact:')>-1 :
+      dic[id] =[]
+      id+=1
+      adBool =True
+    elif adBool:
+      if line.find('phone')>-1 or line.find('e-mail')>-1 :
+        adBool =False
+      else:
+        m = regex.search(line)
+        if m :
+          dic[id-1].append(m.group(1).strip().replace(' ','+'))
+
+  return dic
+
+def whoisjp(string):
+  regex= re.compile('.*?\]\s*(\w.*)',re.VERBOSE)
+  adBool = False
+  id = 0
+  dic = {}
+  for line in lines :
+    if line.find('[Web Page]')>-1 :
+      dic[id] =[]
+      id+=1
+      adBool =True
+    elif adBool:
+      if line.find('Phone')>-1 or line.find('Fax')>-1 :
+        adBool =False
+      else:
+        m = regex.search(line)
+        if m :
+          dic[id-1].append(m.group(1).strip().replace(' ','+'))
+
+  return dic
+
+def whoisorg(string):
+  regex= re.compile('.*?:\s*(\w.*)',re.VERBOSE)
+  adBool = False
+  id = 0
+  dic = {}
+  for line in lines :
+    if line.find('Domain Name:')>-1:
+      pass
+    elif line.find('Name:')>-1 :
+      dic[id] =[]
+      id+=1
+      adBool =True
+    elif adBool:
+      if line.find('Phone:')>-1 or line.find('Server:')>-1 :
+        adBool =False
+      else:
+        m = regex.search(line)
+        if m :
+          dic[id-1].append(m.group(1).strip().replace(' ','+'))
+
+  return dic
+
+
+
+
+def whois(string):
+  regexM = re.compile('.*?@.*?\..{2,6}',re.VERBOSE)
+  regexN = re.compile("(([\+\(]{1,2}\s|[\+\(]{1,2})?(\d{1,8}[\s.\-\(\)]{0,3}){2,5}(ext\.?\s?)?(x\s?)?\d{1,5}[\s<>\"\',\./])",re.VERBOSE)
+  adBool = False
+  id = 0
+  dic = {}
+  for line in lines :
+    if line.find('Contact:')>-1 or line.find('address:')>-1:
+      dic[id] =[]
+      id+=1
+      adBool =True
+    elif adBool:
+      if (regexM.search(line) or line.strip().startswith('+') or line.find('fax')>-1 or line.find('Fax')>-1 or line.strip()=='') and dic[id-1]<>'':
+        adBool =False
+      else:
+        dic[id-1].append(line.strip().replace(' ','+'))
+
+  return dic
+
+search = e_values["value"]
+raw = os.popen('whois '+search)
+lines = raw.readlines()
+tld = search.split('.')[len(search.split('.'))-1]
+
+if tld =='fr' :
+  address = whoisfr(lines)
+elif tld == 'org' :
+  address = whoisorg(lines)
+elif tld == 'jp' :
+  address = whoisjp(lines)
+else :
+  address = whois(lines)
+
+
+regexLL = re.compile('<geometry>.*?<location>\n\s*<lat>(.*?)</lat>\n\s*<lng>(.*?)</lng>\n\s*</location>',re.VERBOSE|re.DOTALL)
+regexFA = re.compile('<formatted_address>(.*?)</formatted_address>',re.VERBOSE|re.DOTALL)
+regexSN = re.compile('<short_name>([\s\w\d]*?)</short_name>\n\s*<type>street_number</type>',re.VERBOSE|re.DOTALL)
+regexR = re.compile('<short_name>([\s\w]*?)</short_name>\n\s*<type>route</type>',re.VERBOSE|re.DOTALL)
+regexL = re.compile('<short_name>([\s\w\d]*?)</short_name>\n\s*<type>locality</type>',re.VERBOSE|re.DOTALL)
+regexC = re.compile('<long_name>([\s\w]*?)</long_name>\n\s*<short_name>[\s\w]*?</short_name>\n\s*<type>country</type>',re.VERBOSE|re.DOTALL)
+regexPC = re.compile('<short_name>([\s\w\d]*?)</short_name>\n\s*<type>postal_code</type>',re.VERBOSE|re.DOTALL)
+
+val={}
+result = []
+res=[]
+for index in address:
+  if address[index] not in res :
+    res.append(address[index])
+    fair = address[index]
+    prec=''
+    for e in range(len(fair)-1,-1,-1):
+      tmp =fair[e] +'+'+prec
+      tmp=tmp.strip('+')
+      url = urllib.urlopen('http://maps.google.com/maps/api/geocode/xml?address='+tmp+'&sensor=true')
+      codexml = url.read()
+      prec=tmp
+      if  e == 0:
+        if val not in result and val<> {}:
+          result.append(val)
+          write_result("location", val)
+          sys.stdout.flush()
+          val={}
+        break
+      else:
+        SN = ''
+        O = ''
+        #####################################################
+        m = regexLL.search(codexml)
+        if m :
+          val['latitude']=unicode(m.group(1), 'utf-8')
+          val['longitude']=unicode(m.group(2), 'utf-8')
+        #####################################################
+        m = regexFA.search(codexml)
+        if m :
+          temp = 'formatedAddress:'+m.group(1)
+          if O <> '':
+            O=O+'|'+temp
+          else :
+            O= temp
+        #####################################################
+        m = regexSN.search(codexml)
+        if m :
+          temp = m.group(1)
+          if SN <> '':
+            SN=SN+' '+temp
+          else :
+            SN= temp
+        #####################################################
+        m = regexR.search(codexml)
+        if m :
+          temp = m.group(1)
+          if SN <> '':
+            SN=SN+' '+temp
+          else :
+            SN= temp
+        #####################################################
+        m = regexL.search(codexml)
+        if m :
+          temp = 'locality:'+m.group(1)
+          if O <> '':
+            O=O+'|'+temp
+          else :
+            O= temp
+        #####################################################
+        m = regexC.search(codexml)
+        if m :
+          val['value']=unicode(m.group(1), 'utf-8')
+        #####################################################
+        m = regexPC.search(codexml)
+        if m :
+          temp = 'postalCode:'+m.group(1)
+          if O <> '':
+            O=O+'|'+temp
+          else :
+            O= temp
+        #####################################################
+        if O<> '':
+          val['other']=unicode(O, 'utf-8')
+        if SN<> '':
+          val['streetNumber']=unicode(SN, 'utf-8')
+

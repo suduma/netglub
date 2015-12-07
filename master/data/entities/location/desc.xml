@@ -1,0 +1,19 @@
+<?xml version='1.0'?>
+<!DOCTYPE EntitySchema>
+<entity name="location" longName="Location" color="#d2b48c" pngImage="image.png" svgImage="image.svg"><!-- Format color : #RRGGBB where R,G and B are hexa digits -->
+  <description>location</description>
+  <fieldList>
+    <field name="value" longName="City,Country" description="location" default="france" level="default" format="string" optional="false" ioMode="input">
+      <string regex=".*"/>
+    </field>
+    <field name="latitude" longName="Latitude" description="latitude" default="" optional="true" level="advanced" format="string" ioMode="input">
+      <string regex=".*"/>
+    </field>
+    <field name="longitude" longName="Longitude" description="longitude" default="" optional="true" level="advanced" format="string" ioMode="input">
+      <string regex=".*"/>
+    </field>
+    <field name="other" longName="Other informations" description="other" default="" optional="true" level="advanced" format="string" ioMode="input">
+      <string regex=".*"/>
+    </field>
+  </fieldList>
+</entity>

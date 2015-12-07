@@ -1,0 +1,247 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import re, sys, os, select
+from generic_transform import * 
+
+sys.path.append('../common/openCalais/')
+sys.path.append('../common/alchmyAPI/')
+
+from calais import Calais
+import urllib, urllib2
+import mimetypes
+import AlchemyAPI
+import simplejson
+from xml.dom.minidom import parseString
+import xml.dom
+
+
+def containsAll(str, set):
+    """Check whether 'str' contains ALL of the chars in 'set'"""
+    return 0 not in [c in str for c in set]
+
+
+
+e_type,e_values,params = get_from_args()
+
+regexU = re.compile(".{2,5}://(.*?)/.*?",re.VERBOSE)
+site = e_values["value"]
+if not site.endswith('/'):
+  site = site + '/'
+site = regexU.findall(site)[0]
+
+    
+resultList =[]
+
+def callCalais(url,key):
+  global resultList
+  API_KEY_CALAIS = key
+  calais = Calais(API_KEY_CALAIS, submitter="python-calais demo")
+  result_calais = {}
+  tipe = mimetypes.guess_type(url)[0]
+  if tipe != None:
+    if (containsAll(tipe,"html")):
+       result_calais = calais.analyze_url(url)
+  else:
+    result_calais = calais.analyze_url(url)
+
+  if result_calais != {}:
+    if result_calais.get_entities() != None:
+      for entity in result_calais.get_entities():
+          try:
+            val= {}
+            if entity.has_key('_type'):
+              if entity['_type'] == 'Person':
+                  value = entity['name'].replace('\n',' ')
+                  value = re.sub("[\*/]",'',value)
+                  val["value"] = value
+
+                  if val not in resultList and value.find(' ') <> -1:
+                      write_result("person", val)
+                      sys.stdout.flush()
+                      resultList.append(val)
+
+              elif entity['_type'] == 'URL':
+                  val["value"] = entity['name'].replace('\n',' ')
+                  if val not in resultList :
+                      write_result("url", val)
+                      sys.stdout.flush()
+                      resultList.append(val)
+
+              elif entity['_type'] == 'EmailAddress':
+                  val["value"] = entity['name'].replace('\n',' ')
+                  if val not in resultList :
+                      write_result("email-address", val)
+                      sys.stdout.flush()
+                      resultList.append(val)
+
+              elif entity['_type'] == 'Country':
+                  val["value"] = "-,"+entity['name'].replace('\n',' ')
+                  if entity.has_key('resolutions'):
+                      if (entity['resolutions'].count(0) >0):
+                          if entity['resolutions'][0].has_key('latitude'):
+                              val["latitude"] = entity['resolutions'][0]['latitude'].replace('\n',' ')
+                          if entity['resolutions'][0].has_key('longitudelatitude'):
+                              val["longitude"] = entity['resolutions'][0]['longitude'].replace('\n',' ')
+                  if val not in resultList :
+                      write_result("location", val)
+                      sys.stdout.flush()
+                      resultList.append(val)
+
+
+              elif entity['_type'] == 'City':
+                  val["value"] = entity['name'].replace('\n',' ')
+                  if entity.has_key('resolutions'):
+                      if (entity['resolutions'].count(0) >0):
+                          if entity['resolutions'][0].has_key('latitude'):
+                              val["latitude"] = entity['resolutions'][0]['latitude'].replace('\n',' ')
+                          if entity['resolutions'][0].has_key('longitude'):
+                              val["longitude"] = entity['resolutions'][0]['longitude'].replace('\n',' ')
+                          if entity['resolutions'][0].has_key('containedbycountry'):
+                              val["value"] += ","+entity['resolutions'][0]['containedbycountry'].replace('\n',' ')
+                          else:
+                              val["value"] += ",-"
+                      else:
+                          val["value"] += ",-"
+                  else:
+                      val["value"] += ",-"
+                  if val not in resultList :
+                      write_result("location", val)
+                      sys.stdout.flush()
+                      resultList.append(val)
+                      
+              elif entity['_type'] == 'ProvinceOrState':
+                  val["value"] = entity['name'].replace('\n',' ')
+                  if entity.has_key('resolutions'):
+                      if (entity['resolutions'].count(0) >0):
+                          if entity['resolutions'][0].has_key('latitude'):
+                              val["latitude"] = entity['resolutions'][0]['latitude'].replace('\n',' ')
+                          if entity['resolutions'][0].has_key('longitudelatitude'):
+                              val["longitude"] = entity['resolutions'][0]['longitude'].replace('\n',' ')
+                          if entity['resolutions'][0].has_key('containedbycountry'):
+                              val["value"] += ","+entity['resolutions'][0]['containedbycountry'].replace('\n',' ')
+                          else:
+                              val["value"] += ",-"
+                      else:
+                          val["value"] += ",-"
+                  else:
+                      val["value"] += ",-"
+                  if val not in resultList :
+                      write_result("location", val)
+                      sys.stdout.flush()
+                      resultList.append(val)
+          except:
+              write_error("Parsing Open callais result failed")
+              sys.stdout.flush()
+    
+def callAlchemy(url,key):
+  global resultList
+  alchemyObj = AlchemyAPI.AlchemyAPI()
+  alchemyObj.setAPIKey(key)
+
+  result_alchemy = {}
+
+  tipe = mimetypes.guess_type(url)[0]
+  if tipe != None:
+    if (containsAll(tipe,"html")):
+       result_alchemy = alchemyObj.URLGetRankedNamedEntities(url)
+  else:
+    result_alchemy = alchemyObj.URLGetRankedNamedEntities(url);
+
+
+  if result_alchemy != {}:
+    xmlDoc = parseString(result_alchemy)
+    
+    for node in  xmlDoc.getElementsByTagName('entity'):
+        try:
+            val ={}
+            xmlReturnType =""
+            tmp =""
+            for n in node.getElementsByTagName('type'):
+                xmlReturnType = n.childNodes[0].nodeValue
+
+            if (xmlReturnType == "Person"):
+                for n in node.getElementsByTagName('text'):
+                    tmp = n.childNodes[0].nodeValue
+                if (tmp != ""):
+                  value = re.sub("[\*/]",'',tmp)
+                  val["value"] = value
+                  if val not in resultList and value.find(' ') <> -1:
+                      write_result("person", val)
+                      sys.stdout.flush()
+                      resultList.append(val)
+
+            elif (xmlReturnType == "City" or xmlReturnType == "Region"):
+                for n in node.getElementsByTagName('text'):
+                    tmp = n.childNodes[0].nodeValue
+                if (tmp != ""):
+                    val["value"] = tmp+",-"
+                    if val not in resultList :
+                        write_result("location", val)
+                        sys.stdout.flush()
+                        resultList.append(val)
+
+            elif (xmlReturnType == "Continent" or xmlReturnType == "StateOrCounty" or xmlReturnType == "Country"):
+                for n in node.getElementsByTagName('text'):
+                    tmp = n.childNodes[0].nodeValue
+                if (tmp != ""):
+                    val["value"] = "-,"+tmp
+                    if val not in resultList :
+                        write_result("location", val)
+                        sys.stdout.flush()
+                        resultList.append(val)
+
+
+            elif (xmlReturnType == "OperatingSystem"):
+                for n in node.getElementsByTagName('text'):
+                    tmp = n.childNodes[0].nodeValue
+                if (tmp != ""):
+                    val["value"] = tmp
+                    if val not in resultList :
+                        write_result("operating-system", val)
+                        sys.stdout.flush()
+                        resultList.append(val)
+
+
+        except:
+            pass
+
+
+boolKeyCalais = False
+boolKeyAlchemy = False
+if "keyCallais" in params or "keyAlchemy" in params:
+  for j in [0]:
+    query = urllib.urlencode({'q' : "site:%s"%site, 'rsz' : 'large', 'start': "%d"%j})
+    url = 'http://ajax.googleapis.com/ajax/services/search/web?v=1.0&%s' \
+      % (query)
+    search_results = urllib.urlopen(url)
+    json = simplejson.loads(search_results.read())
+    results = json['responseData']['results']
+
+    
+    for i in results:
+      if "keyCallais" in params:
+        callCalais(i['url'],params["keyCallais"])
+      else:
+        boolKeyCalais = True
+      if "keyAlchemy" in params:
+        callAlchemy(i['url'],params["keyAlchemy"])
+      else:
+        boolKeyAlchemy = True
+else :
+  boolKeyCalais = True
+  boolKeyAlchemy = True
+
+error = ""  
+if boolKeyCalais:
+  error += "No developers key for open calais, please visit : http://www.opencalais.com/  "
+if boolKeyAlchemy:
+  error += "No developers key for Alchemy, please visit : http://www.alchemyapi.com/"
+
+if error:
+  write_error(error)
+
+
+
+
+

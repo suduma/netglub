@@ -1,0 +1,10 @@
+<?xml version='1.0'?>
+<!DOCTYPE EntitySchema>
+<entity name="unknown" longName="Unknown Entity" color="#ffffff" pngImage="image.png" svgImage="image.svg"><!-- Format color : #RRGGBB where R,G and B are hexa digits -->
+  <description>unknown entity propably imported</description>
+  <fieldList>
+    <field name="value" longName="unknown" description="unknown entity" default="1" level="default" format="string" ioMode="output">
+      <string regex=".*"/>
+    </field>
+  </fieldList>
+</entity>

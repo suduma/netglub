@@ -1,0 +1,59 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import sys
+from generic_transform import * 
+
+sys.path.append('../common/iplib/')
+
+import iplib
+
+e_type,e_values,params = get_from_args()
+
+
+def to2(integer):
+    is2 = True
+    tmp = 2
+    i=0
+    res = 0
+    while is2:
+        if integer == 2**i:
+            res = integer
+            is2 =False
+        elif integer >2**i and integer< 2**(i+1):
+            res = 2**(i+1)
+            is2 =False
+        i+=1
+    return res
+
+def toPower(integer):
+    tmp = integer
+    i=0
+    while tmp >1:
+        tmp=tmp/2
+        i+=1
+    return i
+
+
+fullIp = iplib.IPv4Address('255.255.255.255')
+
+ip = iplib.IPv4Address(e_values["value"])
+size = to2(256)
+if 'block-size' in params:
+    size = to2(int(params['block-size']))
+
+dec = toPower(size)
+ipStart = iplib.IPv4Address(int(ip.get_dec())>>dec<<dec,iplib.IP_DEC)
+ipEnd = ipStart+size-1
+cidr = iplib.CIDR(ipStart,iplib.IPv4Address(int(fullIp.get_dec())>>dec<<dec,iplib.IP_DEC))
+
+ciNb = iplib.IPv4Address(cidr.get_netmask()).get_dec()
+
+
+
+val = {}
+val["value"] = unicode(cidr.get_ip().get()+'/'+str(iplib.VALID_NETMASKS.values().index(int(ciNb))), 'utf-8')
+write_result("ip-block", val)
+sys.stdout.flush()
+  
+

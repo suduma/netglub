@@ -1,0 +1,10 @@
+<?xml version='1.0'?>
+<!DOCTYPE EntitySchema>
+<entity name="domain-name" longName="Domain Name" color="#00ff00" pngImage="image.png" svgImage="image.svg"><!-- Format color : #RRGGBB where R,G and B are hexa digits -->
+  <description>domain name</description>
+  <fieldList>
+    <field name="value" longName="Domain name" description="domain name" default="google.com" level="default" format="string" optional="false" ioMode="input">
+      <string regex="[a-zA-Z0-9\.\-_]*"/>
+    </field>
+  </fieldList>
+</entity>

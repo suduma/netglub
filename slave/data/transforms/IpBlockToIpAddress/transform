@@ -1,0 +1,62 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import os, re, sys, select, subprocess
+from generic_transform import * 
+
+sys.path.append('../common/iplib/')
+
+import iplib
+
+
+e_type,e_values,params = get_from_args()
+
+
+aggressiveness = '-T 5 '
+options = {'normal':'-sS ','udp scan':'-sU ','TCP connect scan':'-sT ','SCTP INIT scan':'-sY ','TCP NULL scan':'-sN ','TCP FIN scan':'-sF ',
+           'TCP Xmas scan':'-sX','TCP Window scan':'-sW '}
+
+ipblock=e_values["value"]
+    
+regexIP = re.compile('Interesting\sports\son(\s.*?)?\s(?(1)\()(.*?)(?(1)\)):')
+regex = re.compile('\n(\d*)/(\w*)\s*(\s*.*?)\s\w+',re.VERBOSE)
+option = 'normal'
+
+if "aggressiveness" in params:
+  aggressiveness = "-T " + params["aggressiveness"]+ " "
+
+if 'option' in params:
+  option = options[params["option"]]
+
+process = subprocess.Popen("sudo nmap " + "-sS " + "-T5 " + ipblock, 
+                             shell=True, stdout=subprocess.PIPE, bufsize=1, 
+                             universal_newlines=True, close_fds=True)
+
+sentVals=[]
+ipP=''
+nmapdone = 0 
+
+
+while not process.poll() :
+  ready = select.select([process.stdout],[],[], .9)
+  if ready != ([],[],[]):
+    line = ready[0][0].readline()
+    if line.startswith("# Nmap done") or line.startswith("Nmap done"):
+      nmapdone = 1
+      break
+    elif line.startswith("Interesting ports"):
+        ipg = regexIP.search(line)
+        ipP =''
+        if ipg:
+            ipP = ipg.group(2)
+    
+    val = {}
+    val["value"] = unicode(ipP, 'utf-8')
+    if val["value"] <> '' and ipP not in sentVals:
+       sentVals.append(ipP)
+       write_result("ip-address", val)
+       sys.stdout.flush()
+
+if process.returncode != 0 and not nmapdone:
+  write_error("Nmap failed in IpBlockToIpAddress")
+  sys.exit(1)

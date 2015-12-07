@@ -1,0 +1,17 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="DomainToMX" longName="To MX [Dig]" type="generic" >
+  <description>Get domains SMTP mails servers</description>
+  <parameters>
+    <param name="server" longName="Server" description="The Domain Name Server t
+o query" default="" optional="true" level="default" format="string">
+      <string regex=".*"/>
+    </param>
+  </parameters>
+  <input>
+    <entity type="domain-name" />
+  </input>
+  <output>
+    <entity type="mx-record" />
+  </output>
+</transform>

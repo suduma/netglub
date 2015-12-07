@@ -1,0 +1,23 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="PersonToEmailSE" longName="To Email [SE]" type="generic" >
+  <description>get emails from person search in SE</description>
+  <parameters>
+    <param name="NbResult" longName="Number or results desired" description="the number of result desired" default="20" optional="true" level="advanced" format="int">
+      <int min="1" max="100"/>
+    </param>
+    <param name="TimeOut" longName="Time Out (prioritary)" description="time out" default="5" optional="true" level="advanced" format="int">
+      <int min="1"/>
+    </param>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="person" />
+  </input>
+  <output>
+    <entity type="email-address" />
+  </output>
+</transform>

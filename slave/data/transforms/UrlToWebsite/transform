@@ -1,0 +1,28 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import re, sys, urllib, os
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+url = e_values["value"]
+regex = re.compile('((\w{2,6})://(.*?)/)(.*)',re.VERBOSE)
+
+website=[]
+website = regex.search(url)
+if website :
+    ns = os.popen('nslookup '+website.group(3)).read()
+    if ns.find('server can\'t find')==-1:
+      try :
+          url2 = urllib.urlopen(website.group(1))
+          server = url2.headers['Server']
+      except:
+          server ='unknown'
+      val = {}
+      val["value"] = website.group(1)
+      val["protocol"] = website.group(2)
+      val["server"] = unicode(server, 'utf-8')
+      write_result("website", val)
+      sys.stdout.flush()
+

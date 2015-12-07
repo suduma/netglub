@@ -1,0 +1,29 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import sys, re, urllib, os
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+mxEntry = re.compile('\sMX\s+\d+\s(.*?)\.\s')
+
+server = ''
+if 'server' in params :
+  if params['server'] <> '' :
+    server = '@'+params['server']
+
+domain = e_values["value"]
+
+raw = os.popen('dig MX '+domain+' '+server)
+lines = raw.readlines()
+for line in lines :
+  rgv = mxEntry.search(line)
+  if rgv :
+    val = {}
+    val['value'] = unicode(rgv.group(1),'utf-8')
+    if val['value'] <> '' :
+      write_result('mx-record',val)
+      sys.stdout.flush()
+
+

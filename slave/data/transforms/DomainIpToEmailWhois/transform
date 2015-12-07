@@ -1,0 +1,23 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import re, os, sys
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+site = e_values["value"]
+lines = os.popen("whois "+ site).read()
+
+regex = re.compile('([a-zA-Z][\w\-\._]+?@[a-zA-Z].+?\.[\w\.]{2,5})',re.VERBOSE)
+allEmails = regex.findall(lines)
+
+emails=[]
+for email in allEmails:
+    if email not in emails:
+        emails.append(email)
+        val = {}
+        val["value"] = unicode( email, 'utf-8')
+        val["verified"] = unicode("False", 'utf-8')
+        write_result("email-address", val)
+        sys.stdout.flush()

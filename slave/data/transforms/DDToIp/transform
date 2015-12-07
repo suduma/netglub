@@ -1,0 +1,75 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import re, sys, os, select
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+site = e_values["value"]
+
+regexS = re.compile(";;\sANSWER\sSECTION:\s?(.*?);;\s?AUTHORITY\sSECTION:",re.VERBOSE | re.DOTALL);
+regexC = re.compile("\sIN\sCNAME\s(.*)\n",re.VERBOSE)
+regexA = re.compile("\sIN\sA\s(.*)\n",re.VERBOSE)
+regexMx = re.compile("\sIN\sMX\s(.*)\n",re.VERBOSE)
+regexNs = re.compile("\sIN\sNS\s(.*)\n",re.VERBOSE)
+
+MxNsList = []
+
+
+lines = os.popen("dig " + site + " ANY").read()
+nsList = regexNs.findall(lines)
+if len(nsList) > 0:
+  for ns in nsList:
+    MxNsList.append(["ns-record",ns[0:len(ns)-1]])
+mxList = regexMx.findall(lines)
+if len(mxList) > 0:
+  for mx in mxList:
+    MxNsList.append(["mx-record",mx[0:len(mx)-1]])
+
+
+
+def isMxNs(name):
+  global MxNsList
+  for i in MxNsList:
+    if i[1] == name[1]:
+      return i[0]
+  return name[0]
+
+parent ="0"
+
+
+def dig(site,index,parent):
+  tmp = index
+  lines = os.popen("dig " + site + " ANY").read()
+  interstingPart = regexS.findall(lines)
+  if len(interstingPart) > 0:
+    interstingPart = interstingPart[0]
+    ipList = regexA.findall(interstingPart)
+    if len(ipList) > 0:
+      for ip in ipList:
+        val = {}
+        val["value"] = unicode(ip,'utf-8')
+        val["id"] = unicode("%d"%tmp,'utf-8')
+        tmp +=1
+        val["parent-id"] = unicode(parent,'utf-8')
+        write_result("ip-address", val)
+        sys.stdout.flush()
+    cNameList = regexC.findall(interstingPart)
+    if len(cNameList) > 0:
+      for cName in cNameList:
+        val = {}
+        if cName[len(cName) -1] =='.':
+          cName = cName[0:len(cName) -1]
+        val["value"] = unicode(cName,'utf-8')
+        val["id"] = unicode("%d"%tmp,'utf-8')
+        val["parent-id"] = unicode("%d"%(tmp-1),'utf-8')
+        write_result(isMxNs([e_type,cName]), val)
+        sys.stdout.flush()
+        parent ="%d"%(tmp)
+        tmp +=1
+        dig(cName,tmp,parent)
+        
+
+
+dig(site,1,parent)

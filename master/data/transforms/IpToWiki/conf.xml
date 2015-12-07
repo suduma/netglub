@@ -1,0 +1,17 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="IpToWiki" longName="To Wiki diff[Shared Ip Address]" type="generic" >
+  <description>get the IP related contributions on wikipedia</description>
+  <parameters>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="ip-address" />
+  </input>
+  <output>
+    <entity type="url" />
+  </output>
+</transform>

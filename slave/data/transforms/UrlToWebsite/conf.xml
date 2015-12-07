@@ -1,0 +1,17 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="UrlToWebsite" longName="To Websites [Parse]" type="generic" >
+  <description>Parse the Url to get the Website</description>
+  <parameters>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="url" />
+  </input>
+  <output>
+    <entity type="website" />
+  </output>
+</transform>

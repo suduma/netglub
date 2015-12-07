@@ -1,0 +1,23 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="WebsiteToWebsiteMirror" longName="To Website [Mirror]" type="generic" >
+  <description>create a mirror of a website and parse it to find links.</description>
+  <parameters>
+    <param name="depth" longName="Depht of the mirroring" description="the depth of the mirroring process" default="1" optional="true" level="advanced" format="int">
+      <int min="1" max="5"/>
+    </param>
+    <param name="TimeOut" longName="Time Out" description="time out" default="5" optional="true" level="advanced" format="int">
+      <int min="1"/>
+    </param>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="website" />
+  </input>
+  <output>
+    <entity type="website" />
+  </output>
+</transform>

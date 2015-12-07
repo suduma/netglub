@@ -1,0 +1,29 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import sys, httplib, urllib
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+
+res = e_values["value"]
+
+try:
+  conn = httplib.HTTPConnection(res,80,False,2)
+  conn.putrequest("GET", "http://"+res+'/')
+  conn.putheader('Connection', 'close')
+  conn.endheaders()
+  s =True
+except :
+  s=False
+
+
+val = {}
+if (s):
+    if res.find('http://') == -1:
+        res = 'http://'+res+'/'
+    val["protocol"]= unicode('http', 'utf-8')
+    val["value"] = res
+    write_result("website", val)
+    sys.stdout.flush()

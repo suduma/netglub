@@ -1,0 +1,27 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import re, urllib, sys
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+codehtml=[]
+result=[]
+
+domain = e_values["value"]
+
+regex = re.compile('([a-zA-Z][\w\-\._]+?@'+domain+')',re.VERBOSE)
+url = urllib.urlopen('http://pgp.mit.edu:11371/pks/lookup?search='+domain)
+codehtml = url.readlines()
+
+for line in codehtml :
+    emails  = regex.findall(line)
+    for email in emails:
+        if email not in result:
+            result.append(email)
+            val = {}
+            val["value"] = unicode(email, 'utf-8')
+            val["verified"] = unicode("False", 'utf-8')
+            write_result("email-address", val)
+            sys.stdout.flush()

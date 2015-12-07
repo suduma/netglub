@@ -1,0 +1,22 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="DomainToDomainTLD" longName="To Domain [TLD]" type="generic" >
+  <description>get all the domain that have the same spelling as the input domain beside the TLD part</description>
+  <parameters>
+    <param name="speed" longName="Using predefined dictionaries" description="using a predefined dictinary with known TLD or brute forcing the TLD" default="TLD" optional="true" level="advanced" format="enum">
+      <enum label="TLD" value="TLD"/>
+      <enum label="dictionary" value="dictionary"/>
+      <enum label="all" value="all"/>
+    </param>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="domain-name" />
+  </input>
+  <output>
+    <entity type="domain-name" />
+  </output>
+</transform>

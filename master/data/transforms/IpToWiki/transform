@@ -1,0 +1,24 @@
+#!/usr/bin/python
+# coding=utf-8
+import select, subprocess, sys, re, os, time, datetime, signal, socket,urllib, urllib2
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+ip = e_values["value"]
+
+regex = re.compile (u'(http://.+)\?title=(.+)(oldid=[0-9]+)'.decode('utf-8'))
+
+
+#<a title="José-Filipe_Lima" href="http://en.wikipedia.org/w/index.php?title=José-Filipe_Lima&amp;diff=prev&amp;oldid=134771917">diff</a>
+url = urllib.urlopen('http://toolserver.org/~luxo/contributions/contributions.php?user='+ip)
+codehtml = url.read()
+links = re.findall(regex,codehtml)
+length = len(links)
+for index in range(0,length):
+  link = links[index]
+  val = {}
+  name = link[1].decode('utf-8').split('&amp')
+  val["title"] = name[0]
+  val["value"]= link[0] + "?" +link[2]+"&diff=prev"
+  write_result("url", val)

@@ -1,0 +1,10 @@
+<?xml version='1.0'?>
+<!DOCTYPE EntitySchema>
+<entity name="dns-name" longName="Dns Name" color="#808000" pngImage="image.png" svgImage="image.svg"><!-- Format color : #RRGGBB where R,G and B are hexa digits -->
+  <description>nom de sous domaine</description>
+  <fieldList>
+    <field name="value" longName="DNS name" description="dns name" default="mail.google.com" level="default" format="string" optional="false" ioMode="input">
+      <string regex="[a-zA-Z0-9\.\-_\+]*"/>
+    </field>
+  </fieldList>
+</entity>

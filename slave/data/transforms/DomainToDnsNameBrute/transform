@@ -1,0 +1,93 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import re, sys, os, select, subprocess
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+timeout=''
+inputfile = 'dns.txt '
+inputfiles =[]
+if "timeout" in params:
+  timeout = '-timeout=%s '% params["timeout"]
+if "infile" in params:
+    if params["infile"] == 'dns':
+        inputfiles = ['dns.txt ']
+    elif params["infile"] == 'français':
+        inputfiles = ['francais-divers.txt ']
+    elif params["infile"] == 'all':
+        inputfiles = ['dns.txt ','francais-divers.txt ']
+    else:
+        inputfiles = ['dns.txt ']
+inputfiles = ['dns.txt ']
+site = e_values["value"]
+
+
+regexDNS = re.compile('\s*?(.*?)\.\s*?\d*?\s*?IN\s(CNAME)|(A)',re.VERBOSE)
+regexNS = re.compile('\s*(.*?)\.\s*?\d*?\s*?IN\sA',re.VERBOSE)
+result = []
+begin = False
+findMx = False
+findNs = False
+
+for inputfile in inputfiles:
+    process = subprocess.Popen("perl ../common/dnsenum/dnsenum.pl --noreverse -f " + inputfile + timeout + site,
+                             shell=True, stdout=subprocess.PIPE, bufsize=1, 
+                             universal_newlines=True, close_fds=True)
+    while process.poll() == None or process.poll() == 0:
+      ready = select.select([process.stdout],[],[], .5)
+      if ready != ([],[],[]):
+        line = ready[0][0].readline()
+
+        if line.startswith("Name servers:"):
+          findNs = True
+        elif line.startswith('MX record:') and findNs :
+          findNs =False
+        if findNs:
+          m = regexNS.findall(line)
+          if len(m)>0:
+            res = m[0].strip()
+            if res not in result :
+              result.append(res)
+              val = {}
+              val["value"] = unicode(res, 'utf-8')
+              write_result("ns-record", val)
+              sys.stdout.flush()
+
+        if line.startswith("MX record:"):
+          findMx = True
+        elif line.startswith('Trying Zonetransfers:') and findMx :
+          findMx =False
+        if findMx:
+          m = regexNS.findall(line)
+          if len(m)>0:
+            res = m[0].strip()
+            if res not in result :
+              result.append(res)
+              val = {}
+              val["value"] = unicode(res, 'utf-8')
+              write_result("mx-record", val)
+              sys.stdout.flush()
+
+        if line.startswith("Brute forcing"):
+          begin = True
+        elif line.startswith(site) and begin :
+          begin = False
+          break
+        if begin:
+          m = regexDNS.findall(line)
+          if len(m)>0:
+            res = m[0][0].strip()
+            if res not in result and res != None and res !="":
+              result.append(res)
+              val = {}
+              val["value"] = unicode(res, 'utf-8')
+              write_result("dns-name", val)
+              sys.stdout.flush()
+
+
+try:
+  os.popen("sudo rm -r %s_ips.txt"%site)
+except:
+  pass

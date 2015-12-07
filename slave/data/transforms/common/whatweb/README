@@ -1,0 +1,373 @@
+WhatWeb - Next generation web scanner.
+By Andrew Horton aka urbanadventurer, MorningStar Security
+Version : 0.4.3, 24th May 2009
+Homepage: http://www.morningstarsecurity.com/research/whatweb
+License: GPLv2
+
+
+Identify content management systems (CMS), blogging platforms, stats/analytics packages, javascript libraries, servers and more. When you visit a website in your browser the transaction includes many unseen hints about how the webserver is set up and what software is delivering the webpage. Some of these hints are obvious, eg. "Powered by XYZ" and others are more subtle. WhatWeb recognises these hints and reports what it finds.
+
+WhatWeb has over 80 plugins and needs community support to develop more. Plugins can identify systems with obvious identifying hints removed by also looking for subtle clues. For example, a WordPress site might remove the tag <meta name="generator" content="WordPress 2.6.5"> but the WordPress plugin also looks for "wp-content" which is less easy to disguise. Plugins are flexible and can return any datatype, for example plugins can return version numbers, email addresses, account ID's and more.
+
+There are both passive and aggressive plugins, passive plugins use information on the page, in cookies and in the URL to identify the system. A passive request is as light weight as a simple GET / HTTP/1.1 request. Aggressive plugins guess URLs and request more files. Plugins are easy to write, you don't need to know ruby to make them.
+
+
+EXAMPLE USAGE
+
+Using WhatWeb on a handful of websites.
+
+$ whatweb slashdot.org reddit.com digg.com http://www.engadget.com/ www.whitehouse.gov
+http://reddit.com [302] HTTPServer[AkamaiGHost], RedirectLocation[http://www.reddit.com/], MD5[d41d8cd98f00b204e9800998ecf8427e]
+http://www.engadget.com/ [200] probably BlogSmithMedia, UncommonHeaders[keep-alive], Title[Engadget], HTTPServer[Apache/2.2], Footer-Hash[4e7842357987aabffe7c3f949aaa8225], Header-Hash[40cbd7dad1da86fa8db86b1f67e8c161], MD5[68a75c891cdf47e0437107e052f13b18], Div-Span-Structure[7ee1d6918657532956bd7575b5e79cac]
+http://slashdot.org [200] X-Powered-By[Slash 2.005001297], UncommonHeaders[x-varnish,x-bender,x-xrds-location,slash_log_data], Google-Analytics[GA][32013], HTTPServer[Apache/1.3.41 (Unix) mod_perl/1.31-rc4], Title[Slashdot - News for nerds, stuff that matters], Header-Hash[2be659fd66e83283ebee188fe46e4d0c], MD5[3ec9a5f7c91a6c2203faed841a9597fa], Footer-Hash[242c48090bb79b5e19794cffc95b2c60], Div-Span-Structure[ee076bc91de36c4e4f4837b178e27c94]
+http://www.reddit.com/ [200] Title[reddit.com: what's new online!], Cookies[reddit_first], JQuery, Google-Analytics[GA][12131688], HTTPServer['; DROP TABLE servertypes; --], Footer-Hash[9086bcb16723f874c9cebdb8497731bb], Header-Hash[4fbc1dcf08d2a4be4f8b4de0617e9956], Div-Span-Structure[c6e5883f5a1a5c8ab05edc9a1300aefa], MD5[2f3396ce7a8ecbc3e2e49cab1d00c032]
+http://digg.com [200] X-Powered-By[PHP/5.2.9-digg8], Cookies[1337,PHPSESSID,ccc], UncommonHeaders[keep-alive], Title[Digg - The Latest News Headlines, Videos and Images], HTTPServer[Apache], Mailto, Header-Hash[2df7eaaa4480f28013aaf48ae9266b84], MD5[6e13f4a62fa9c7e6299da1ea431aa466], Footer-Hash[ca2ffbc939969a2246cde196f0fc4841], Div-Span-Structure[b6fdd8465b9539cfbb3e185951b813bf]
+http://www.whitehouse.gov/ [200] Title[The White House], Cookies[d], HTTPServer[White House], Drupal, Google-Analytics[GA][10791350], Footer-Hash[25a3cb4b2bedc475c500b9826a2ab77b], Div-Span-Structure[40f5dbabb00e467870716fc36c06f59c], Header-Hash[6ab220f882680f23982afcd35d28da29], MD5[d7c0dca1a93bf1d7755662fec84ec205]
+
+
+
+
+HELP
+WhatWeb - Next generation web scanner.
+Version 0.4.3 by Andrew Horton aka urbanadventurer, MorningStar Security
+http://www.morningstarsecurity.com/research/whatweb
+
+Usage: whatweb [options] <URLs>
+
+<URLs>			Enter URLs or filenames. Use /dev/stdin to pipe HTML directly
+--input-file=FILE, -i	Identify URLs found in FILE
+--aggression, -a	1 passive - on-page
+			2 polite - follow on-page links if in the extra-urls list (default)
+			3 impolite - try extra-urls when plugin matches (smart, guess a few urls)
+			4 aggressive - try extra-urls for every plugin (guess a lot of urls)
+--recursion, -r		Follow links recursively. Only follows links under the path (default: off)
+--depth, -d		Maximum recursion depth (default: 10)
+--max-links, -m		Maximum number of links to follow on one page (default: 250)
+--list-plugins, -l	List the plugins
+--run-plugins, -p	Run comma delimited list of plugins. Default is to run all
+--info-plugins, -I	Display information about a comma delimited list of plugins. Default is all
+--example-urls, -e	Add example urls for each plugin to the target list
+--colour=[WHEN],
+--color=[WHEN]		control whether colour is used. WHEN may be `never', `always', or `auto'
+--log-full=FILE		Log verbose output
+--log-brief=FILE	Log brief, one-line output
+--log-xml=FILE		Log XML format
+--user-agent, -U	Identify as user-agent instead of WhatWeb/VERSION.
+--max-threads, -t	Number of simultaneous threads identifying websites in parallel. Default is 25.
+--proxy, -t		<hostname[:port]> Set proxy hostname and port (default: 8080)
+--proxy-user, -t	<username:password> Set proxy user and password
+--help, -h		This help
+--verbose, -v		Increase verbosity (recommended), use twice for debugging.
+--version		Display verion information.
+
+
+
+LOG OUTPUT
+
+There are currently 3 types of log output. They are:
+	* Brief logging
+	* Full logging
+	* XML logging
+
+
+Brief Logging.
+
+Example usage: whatweb --brief-full b.log digg.com
+
+	http://digg.com [200] X-Powered-By[PHP/5.2.9-digg8], Cookies[1337,PHPSESSID,ccc], UncommonHeaders[keep-alive], Title[Digg - The Latest News Headlines, Videos and Images], HTTPServer[Apache], Mailto, Header-Hash[2df7eaaa4480f28013aaf48ae9266b84], MD5[24bc43e698e5d1388e836f5eee094fbe], Footer-Hash[ca2ffbc939969a2246cde196f0fc4841], Div-Span-Structure[828d809947c3c760d41c720c9203993b]
+
+
+Full Logging.
+
+Example usage: whatweb --log-full f.log digg.com
+
+	Identifying: http://digg.com
+	HTTP-Status: 200
+	[["Cookies",
+	  [{:probability=>100,
+		:name=>"cookie names",
+		:string=>["1337", "PHPSESSID", "ccc"]}]],
+	 ["Div-Span-Structure",
+	  [{:probability=>100,
+		:name=>"div structure",
+		:string=>"828d809947c3c760d41c720c9203993b"}]],
+	 ["Footer-Hash",
+	  [{:probability=>100,
+		:name=>"hash",
+		:string=>"ca2ffbc939969a2246cde196f0fc4841"}]],
+	 ["HTTPServer",
+	  [{:probability=>100, :name=>"server string", :string=>"Apache"}]],
+	 ["Header-Hash",
+	  [{:probability=>100,
+		:name=>"hash",
+		:string=>"2df7eaaa4480f28013aaf48ae9266b84"}]],
+	 ["MD5",
+	  [{:probability=>100,
+		:name=>"page title",
+		:string=>"455e6da4264cc6334b78a72c083ced77"}]],
+	 ["Mailto",
+	  [{:emails=>
+		 ["?subject=Digg Story: Jennifer Aniston,wins the battle of the bikini with Model 23&body=I wanted to share this story with you: http://digg.com/d31RvOK?e\r\n --- \r\n\"Jennifer Aniston,wins the battle of the bikini with Model 23\"\r\nActresses peeled off to reveal a two-piece as they filmed romantic comedy Just Go With It in Hawaii.\r\n+156 people dugg this story."]
+		:probability=>100,
+		:name=>"mailto:"}]],
+	 ["Title",
+	  [{:probability=>100,
+		:name=>"page title",
+		:string=>"Digg - The Latest News Headlines, Videos and Images"}]],
+	 ["UncommonHeaders",
+	  [{:probability=>100, :name=>"headers", :string=>"keep-alive"}]],
+	 ["X-Powered-By",
+	  [{:probability=>100,
+		:name=>"x-powered-by string",
+		:string=>"PHP/5.2.9-digg8"}]]]
+
+
+XML Logging
+
+The XML logging is currently naive and may change. Please contact me if you have suggestions.
+
+Example usage: ./whatweb --log-full f.log --log-xml x.log digg.com
+
+	<target>
+		<uri>http://digg.com</uri>
+		<http-status>200</http-status>
+		<plugin>
+			<name>Cookies</name>
+			<string>1337</string>
+			<string>PHPSESSID</string>
+			<string>ccc</string>
+		</plugin>
+		<plugin>
+			<name>Div-Span-Structure</name>
+			<string>828d809947c3c760d41c720c9203993b</string>
+		</plugin>
+		<plugin>
+			<name>Footer-Hash</name>
+			<string>ca2ffbc939969a2246cde196f0fc4841</string>
+		</plugin>
+		<plugin>
+			<name>HTTPServer</name>
+			<string>Apache</string>
+		</plugin>
+		<plugin>
+			<name>Header-Hash</name>
+			<string>2df7eaaa4480f28013aaf48ae9266b84</string>
+		</plugin>
+		<plugin>
+			<name>MD5</name>
+			<string>455e6da4264cc6334b78a72c083ced77</string>
+		</plugin>
+		<plugin>
+			<name>Mailto</name>
+		</plugin>
+		<plugin>
+			<name>Title</name>
+			<string>Digg - The Latest News Headlines, Videos and Images</string>
+		</plugin>
+		<plugin>
+			<name>UncommonHeaders</name>
+			<string>keep-alive</string>
+		</plugin>
+		<plugin>
+			<name>X-Powered-By</name>
+			<string>PHP/5.2.9-digg8</string>
+		</plugin>
+	</target>
+
+
+
+PLUGINS
+
+There are over 80 plugins as of April, 2010. Plugins are easy to make.
+Matches are made with regular expressions, Google Hack Database queries, and custom ruby code.
+For now the probability means maybe (25%), probably (75%) and certain (100%).
+
+A typical plugin looks like this:
+
+
+	Plugin.define "Plone" do
+	author "Andrew Horton"
+	version "0.1"
+	description "CMS http://plone.org"
+	examples %w| www.norden.org www.trolltech.com www.plone.net www.smeal.psu.edu|
+
+	matches [
+	{:name=>"meta generator tag",
+	:probability=>100,
+	:regexp=>/<meta name="generator" content="[^>]*http:\/\/plone.org" \/>/},
+
+	{:name=>"plone css",
+	:probability=>100,
+	:regexp=>/(@import url|text\/css)[^>]*portal_css\/.*plone.*css(\)|")/}, #"
+
+	{:name=>"plone javascript",
+	:probability=>100,
+	:regexp=>/src="[^"]*ploneScripts[0-9]+.js"/}, #"
+
+	{:name=>"div class=\"visualIcon contenttype-plone-site\"",
+	:probability=>100,
+	:text=>'<div class="visualIcon contenttype-plone-site">'},
+
+	{:name=>"div tag, visual-portal-wrapper",
+	:probability=>75,
+	:text=>'<div id="visual-portal-wrapper">'},
+	]
+
+	def passive
+		m=[]
+		#X-Caching-Rule-Id: plone-content-types
+		#X-Cache-Rule: plone-content-types
+		m << {:name=>"X-Caching-Rule-Id: plone-content-types", :probability=>100 } if @meta["x-caching-rule-id"] =~ /plone-content-types/i
+		m << {:name=>"X-Cache-Rule: plone-content-types", :probability=>100 } if @meta["x-cache-rule"] =~ /plone-content-types/i
+		m
+	end
+
+	end
+
+
+
+There are 3 levels to a plugin. Simple matches, passive and agressive tests. You don't need to know ruby to write plugins with simple matches. Passive and aggressive tests are written in ruby.
+
+Note the matches array. There are various types of matches. :text, :regexp and :ghdb.
+
+If you port a GHDB match, use :ghdb. I usually rewrite the GHDB matches with regular expressions, especially if they require inurl:
+
+Example:
+	# http://johnny.ihackstuff.com/ghdb?function=detail&id=1840
+	{:name=>"GHDB: \"Powered by Vsns Lemon\" intitle:\"Vsns Lemon\"",
+	 :probability=>100,
+	 :ghdb=>'"Powered by Vsns Lemon" intitle:"Vsns Lemon"'}
+
+Note the GHDB queries are case insensitive, as a Google query is. Support codes are intitle:, inurl: and filetype:.
+
+
+Each plugin can access @body, @meta, @status and @base_uri variables. 
+
+Passive tests add matches to the m array, each match is a hash containing the name of the match, probability and more.
+The entire hash is returned with Full output, Brief output returns just the match, :version and :string
+
+To discover the regular expressions to match against, wget about 20-30 examples into the tests/ folder. Be aware that some software can have dramatic variations between versions. 
+First view the META data and HTML of a few examples.
+The find-common-stuff tool can help discover unexpected similarities in the examples.
+
+
+
+AGGRESSIVE PLUGINS
+
+There are currently aggressive plugins for Joomla, phpBB, FluxBB, OSCommerce and Tomcat.
+With the passive plugin we know that ardentcreative.co.nz is running Joomla version 1.5
+
+$ ./whatweb ardentcreative.co.nz 
+http://ardentcreative.co.nz [301] md5[0670664f07b972398a96c6a58e812c2d], redirect-location[http://www.ardentcreative.co.nz/], server-header[Apache], title[301 Moved Permanently]
+http://www.ardentcreative.co.nz/ [200] Google-Analytics-GA[791888], Joomla[1.5], md5[fcb3ec0dfafae53dfdef2e991a24f1c1], meta-generator[Joomla! 1.5 - Open Source Content Management], server-header[Apache], title[Ardent Creative, Christchurch Web Design]
+
+With the aggressive plugin we know that ardentcreative.co.nz is running Joomla version 1.5.13 - 1.5.14
+
+$ ./whatweb -a 3 ardentcreative.co.nz 
+http://ardentcreative.co.nz [301] md5[0670664f07b972398a96c6a58e812c2d], redirect-location[http://www.ardentcreative.co.nz/], server-header[Apache], title[301 Moved Permanently]
+http://www.ardentcreative.co.nz/ [200] Google-Analytics-GA[791888], Joomla[1.5,1.5.13 - 1.5.14], md5[fcb3ec0dfafae53dfdef2e991a24f1c1], meta-generator[Joomla! 1.5 - Open Source Content Management], server-header[Apache], title[Ardent Creative, Christchurch Web Design]
+
+Be cafeful when using aggressive plugins with recursive site crawling. WhatWeb has no understanding of a website, instead it currently treats each URL separately.
+It also has no caching so if you use aggressive plugins with recursion you will fetch the same files multiple times. The same is true for aggressive modes on redirecting URLs.
+
+
+
+RECURSIVE SPIDER
+
+The recursion option is used to scan some or all of a website with whatweb. Recursive spidering will follow each link on a webpage if it is within the same website, then repeat the process on the followed pages.
+
+The configurable settings for recursive spidering are:
+	--recursion, -r		Follow links recursively. Only follows links under the path (default: off)
+	--depth, -d		Maximum recursion depth (default: 3)
+	--max-links, -m		Maximum number of links to follow on one page (default: 25)
+
+The spider skips this hardcoded list of file extensions:
+/\.zip$/,/\.gz$/,/\.tar$/,/\.jpg$/,/\.exe$/,/\.png$/,/\.pdf$/
+
+Limitations of the spidering. This follows links in <a> tags, these are the HTML tags designed specifically for links. The spider does not obtain urls from other sources. Some good choices for future improvement are image tags, eg. <img src="/images/boats.jpg">, form tags, eg. <form action="/vote.php">, url paths in CSS files, etc.
+
+The spider is provided by anemone, a third party ruby gem. It doesn't follow redirects. For example the URL treshna.com will fail and www.treshna.com will produce results.
+
+
+
+RELATED PROJECTS
+
+WhatWeb is unique however there are some web projects with the same goal of identifying a website.
+
+WAFP - Web Application Finger Printing
+Wafp identifies systems by requesting a large quantity of URLs and comparing md5 sums of the results against a database. This method is reliable for known systems in the database and it is simple to add new ones. Unlike whatweb, this method is intrusive and will create a lot of webserver log entries.
+http://www.mytty.org/wafp
+
+Wappalyzer
+This is the most similar project to WhatWeb.
+Firefox plugin identifies sites using 1 regexp each. Only looks for obvious identifiers like meta generator tags. Sends all recognized urls to a DB. Has nice icons
+https://addons.mozilla.org/en-US/firefox/addon/10229
+
+w3af
+http://w3af.sourceforge.net
+Very slight overlap of features in the grep and discovery scripts section.
+
+HTTPRecon
+No feature overlap, fingerprints the HTTP Server
+http://w3dt.net/tools/httprecon/
+http://www.net-square.com/httprint/httprint_paper.html
+http://www.darknet.org.uk/2007/09/httprint-v301-web-server-fingerprinting-tool-download/
+
+Nmap version scan
+Nmap shows some info about HTTP servers when using version scan, eg. nmap -sV -p80 treshna.com
+
+THC's Amap
+This tool is an application fingerprint scanner which can identify an HTTP protocol server. It doesn't identify types of HTTP servers.
+
+What's that web server running 1.0 (whatweb.exe)
+This shares the same name and goal but is shit. It ONLY uses the HTTP Server string. For example 'Apache/2.0.55 (Ubuntu) PHP/5.1.2'
+http://www.spambutcher.com/whatweb.html
+
+http-stats.com
+Lots of info about HTTP server names
+
+
+FUNNY & UNUSUAL
+Slashdot.org
+X-Fry: You mean Bender is the evil Bender? I'm shocked! Shocked! Well not that shocked.
+
+popurls.com
+X-popurls-a: in the future every url will be popular for 1.5 seconds
+
+reddit.com
+HTTPServer:'; DROP TABLE servertypes; --
+
+
+
+NOTES
+
+Version 0.3 Released at Kiwicon III (kiwicon.org), 2009.
+Version 0.4 Released March 14th, 2010
+Version 0.4.1 Released April 28th, 2010
+Version 0.4.2 Released April 30th, 2010
+Version 0.4.3 Released May 24th, 2010
+
+
+CREDITS
+
+Written by Andrew Horton aka urbanadventurer
+Homepage: http://www.morningstarsecurity.com
+License: GPLv2
+
+Anemone library (used for spidering) is written by Chris Kite
+Homepage: http://anemone.rubyforge.org/
+License: MIT
+
+
+COMMUNITY PLUGINS
+
+Thank you to the following people who have contributed a plugin to WhatWeb.
+
+Emilio Casbas
+Louis Nyffenegger
+Patrik Wallström
+
+Thank you to Michal Ambroz for writing the Makefile and Man pages
+
+
+

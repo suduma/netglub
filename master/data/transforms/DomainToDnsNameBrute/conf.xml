@@ -1,0 +1,27 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="DomainToDnsNameBrute" longName="To Dns Name [Brute Force]" type="generic" >
+  <description>find dns names from domain by brute forcing them</description>
+  <parameters>
+    <param name="infile" longName="Some useful dictionaries" description="the file to use" default="dns" optional="true" level="default" format="enum">
+      <enum label="dns" value="dns.txt"/>
+      <enum label="français" value="francais-divers.txt"/>
+      <enum label="all" value="dns.txt,francais-divers.txt"/>
+    </param>
+    <param name="timeout" longName="Time Out" description="The DNS query timeout (seconds)" default="5" optional="true" level="default" format="int">
+      <int min="1"/>
+    </param>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="domain-name" />
+  </input>
+  <output>
+    <entity type="dns-name" />
+    <entity type="mx-record" />
+    <entity type="ns-record" />
+  </output>
+</transform>

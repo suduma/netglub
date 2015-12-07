@@ -1,0 +1,17 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="DomainToDomainTopLevel" longName="To Domain [Top Level]" type="generic" >
+  <description>get the first top level domain</description>
+  <parameters>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="domain-name" />
+  </input>
+  <output>
+    <entity type="domain-name" />
+  </output>
+</transform>

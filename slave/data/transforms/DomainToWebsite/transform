@@ -1,0 +1,32 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import sys, os, urllib, urllib2
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+website = 'www.'+e_values["value"]
+brut = ""
+try:
+  brut = os.popen('nslookup '+ website).read()
+except:
+  pass
+
+val = {}
+if brut.find('server can\'t find')==-1 or brut == "":
+  for pro in ['http','https','ftp']:
+    val = {}
+    try:
+      if pro == 'https':
+        url2 = urllib.urlopen(pro+'://'+website);
+      else:
+        url2 = urllib2.urlopen(pro+'://'+website,timeout=3);
+      val["protocol"] = unicode(pro, 'utf-8')
+      val["server"] = unicode(url2.headers['Server'], 'utf-8')
+      val["value"] = pro+'://'+website+'/' 
+      write_result("website", val)
+      sys.stdout.flush()
+    except:
+      pass
+

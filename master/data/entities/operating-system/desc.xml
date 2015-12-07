@@ -1,0 +1,13 @@
+<?xml version='1.0'?>
+<!DOCTYPE EntitySchema>
+<entity name="operating-system" longName="Operating System" color="#ff0000" pngImage="image.png" svgImage="image.svg"><!-- Format color : #RRGGBB where R,G and B are hexa digits -->
+  <description>operating system</description>
+  <fieldList>
+    <field name="value" longName="Operating System" description="operating system" default="" level="default" format="string" ioMode="input">
+      <string regex=".*"/>
+    </field>
+    <field name="host" longName="Host's IP" description="operating system" default="" level="default" format="string" ioMode="input">
+      <string regex=".*"/>
+    </field>
+  </fieldList>
+</entity>

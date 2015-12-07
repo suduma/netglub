@@ -1,0 +1,17 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="PersonToEmailPGP" longName="To Email [PGP]" type="generic" >
+  <description>get the mails from pgp key server.</description>
+  <parameters>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="person" />
+  </input>
+  <output>
+    <entity type="email-address" />
+  </output>
+</transform>

@@ -1,0 +1,77 @@
+
+Version 0.4.3 Released May 24th 2010
+* Added GPLv2 notices
+* Added Makefile (Thanks Michal Ambroz <rebus AT seznam.cz>)
+* Added man pages (Thanks Michal Ambroz <rebus AT seznam.cz>)
+* Added --version
+* Added Invalid command line argument handling
+* Added @cookie variable to plugins but is not availble for recursive use
+* Changed output colour of page titles
+* Changed plugin names to use a CamelCase convention
+* Merged the google analytics GA and Urchin plugins
+* Modified MovableType plugin
+* Added Cookie names plugin
+* Added Concrete5 CMS plugin
+* Added CushyCMS plugin
+* Added FrogCMS plugin
+* Added ModxCMS plugin
+* Added TypoLight plugin
+* Added ExpressionEngine plugin
+* Fixed a bug in Tomcat plugin
+* New feature, my-plugins/ folder. Keep your personal plugins separate.
+* Usage info shows correct defaults
+* Fixed a bug where aggressive plugins didn't use the proxy settings
+* Added XML (naive) logging
+* Updated usage to show how to pipe HTML to /dev/stdin
+* Added --no-redirect option. Do not follow HTTP 3xx redirects
+
+Version 0.4.2 Released April 30th 2010
+* Added header-hash plugin. Makes a hash of the first 500 characters. This is useful to identify unknown systems
+* Added footer-hash plugin. Makes a hash of the last 500 characters, only if the page has > 1000 characters. This is useful to identify unknown systems
+* Added div-span-structure plugin. Makes a hash of a signature of div and span tags. This is useful to identify unknown systems
+* Added MikroTik Router plugin. Recognises version
+* Fixed a bug where the URL had a ? suffix. This caused some types of http servers to repspond incorrectly.
+* Added SquirrelMail plugin. Recognises version
+* Added SearchFitShoppingCart plugin. Recognises version
+* Added RoundCube plugin.
+* Modified OSCommerce plugin. Recognises security warnings about file permissions and installation directory.
+* Changed output colour to be more readable. Plugins that create hashes are in grey
+* Changed output order of plugins, so plugins that create hashes come last
+
+Version 0.4.1 Released April 28th 2010
+* Removed dependency on rubygems and libxslt by modifying and locally including the Anemone gem. This also simplified installation
+* Fixed a bug which didn't send URL parameters. eg. would send /index.php instead of /index.php?q=foo
+* Improved installation instructions. Henri Salo contacted me to say ruby-dev is required for Anemone
+* Removed UTF-8 character in formmail
+* Changed require 'md5' to require 'digest/md5' for compatibility with ruby 1.9 
+* Fixed bug in Tomcat plugin
+* Added SilverStripe plugin
+* Added DotNetNuke plugin
+* Added HTML5 plugin
+* Added PHP error plugin
+* Modified PHP-Nuke plugin
+* Changed the plugin development script, wget-list to retry only twice
+* Added proxy support
+* Default threads is now 25
+* Default max recursive spidering depth is now 10
+* Default max number of links to follow on a single page is now 250
+
+Version 0.4 Released March 13th 2010
+* Added HTTPS support
+* Improved installation instructions
+* Improved documentation
+* Better compatibility with ruby 1.9. Changed a case statement syntax, changed when 0: to when 0 then.
+* Removed UTF-8 characters in plugins that were causing crashes
+* Added php-nuke plugin, passively recognises modules
+* Added Fluxbb plugin, can identify versions aggressively
+* Added meta powered-by plugin. Matches tags like <meta name="powered-by" content="abc/1.23" />
+* Added powered by plugin. Matches "Powered by BobsCMS", any text following powered by
+* Improved plugin info listing invoked by ./whatweb -I. Shows number of examples and matches, and shows presence of passive and aggressive functions
+* Changed output style. Before strings are surrounded by single quotes, now all strings are surrounded by square brackets
+* Added OpenCMS plugin submitted by Emilio Casbas
+* Added TomCat plugin submitted by Louis Nyffenegger
+* Improved meta-generator plugin
+* Fixed a bug in processing a target list from a file where a trailing space would be interpreted incorrectly
+
+Version 0.3 Released November 2nd 2009 at Kiwicon III
+

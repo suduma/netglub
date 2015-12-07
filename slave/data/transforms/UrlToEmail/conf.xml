@@ -1,0 +1,17 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="UrlToEmail" longName="To Email [Parse]" type="generic" >
+  <description>parse an url to find emails</description>
+  <parameters>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="url" />
+  </input>
+  <output>
+    <entity type="email-address" />
+  </output>
+</transform>

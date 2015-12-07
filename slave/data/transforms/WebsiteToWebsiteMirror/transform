@@ -1,0 +1,98 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import re, urllib, sys, os, time, threading
+from generic_transform import * 
+from threading import Thread
+e_type,e_values,params = get_from_args()
+
+depth = ''
+if "depth" in params:
+  depth = '--depth '+params["depth"]+' '
+depth = ''
+
+lines=[]
+result=[]
+donePaths=[]
+
+website = e_values["value"]
+regexN = re.compile('//(.+?)/',re.VERBOSE)
+name = ""
+try:
+    name = regexN.findall(website)[0]
+except:
+    name = website
+
+
+def parsefile(path,result):
+    regex = re.compile('<a.*?\shref=\"((\w{2,6})://.*?)(/.*?)?\"\s?.*?>.*?</a>',re.VERBOSE)
+    fil = open(path)
+    lines = fil.read()
+    emails = re.findall(regex,lines)
+    for email in emails :
+        res = email[0]
+        if res not in result:
+            
+            result.append(res)
+            bef = ''
+            if res.find('http://') == -1:
+                bef = 'http://'
+            val = {}
+            try :
+                url2 = urllib.urlopen(bef+res)
+                val["server"] = unicode(url2.headers['Server'], 'utf-8')
+            except:
+                val["server"] = unicode('unknown', 'utf-8')
+            val["protocol"] = unicode(email[1], 'utf-8')
+            val["value"] = unicode(res, 'utf-8')
+            write_result("website", val)
+            sys.stdout.flush()
+            
+    return result
+        
+
+def readfiles(basePath):
+    
+    listfile = os.listdir(basePath)
+    for dirOrFile in listfile:
+        path = basePath+'/'+dirOrFile
+        if path not in donePaths:
+            if os.path.isfile(path):
+                donePaths.append(path)
+                parsefile(path,result)
+            elif os.path.isdir(path):
+                readfiles(path)
+            
+    return result
+
+class mirror(Thread):
+   def __init__ (self,website,name):
+      Thread.__init__(self)
+      self.website = website
+      self.name = name
+   def run(self):
+       write_progress(0,' begin mirroring of '+ name)
+       sys.stdout.flush()
+       os.popen("mirrortool --dir "+ name+' '+depth+website)
+       write_progress(90,' end of mirroring of '+ name)
+       sys.stdout.flush()
+        
+
+
+th = mirror(website,name)
+th.start()
+end = 0
+while end < 5:
+    if os.path.isdir(name):
+        result = readfiles(name)
+    else:
+        time.sleep(1)
+
+    if not th.isAlive():
+        time.sleep(1)
+        end +=1
+
+
+os.popen("rm -r "+ name)
+
+

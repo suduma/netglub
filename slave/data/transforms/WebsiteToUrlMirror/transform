@@ -1,0 +1,96 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import re, urllib, sys, os, time, threading
+from generic_transform import * 
+from threading import Thread
+import mimetypes
+
+e_type,e_values,params = get_from_args()
+
+depth = ''
+if "depth" in params:
+  depth = '--depth '+params["depth"]+' '
+depth = ''
+
+lines=[]
+result=[]
+donePaths=[]
+
+website = e_values["value"]
+if not website.endswith('/'):
+  website = website+'/'
+regexN = re.compile('//(.+?)/',re.VERBOSE)
+name = ""
+try:
+    name = regexN.findall(website)[0]
+except:
+    name = website
+
+def containsAll(str, set):
+    """Check whether 'str' contains ALL of the chars in 'set'"""
+    return 0 not in [c in str for c in set]
+   
+def readfiles(basePath):
+    
+    listfile = os.listdir(basePath)
+    for dirOrFile in listfile:
+        path = basePath+'/'+dirOrFile
+        if path not in donePaths :
+            if os.path.isfile(path) :
+                #print path
+                val = {}
+                typeToAdd = ""
+                mime = mimetypes.guess_type(path)[0]
+                if mime == None:
+                    val["value"] = "http://"+path
+                    typeToAdd = "url"
+                elif not containsAll(mime,"image"):
+                    
+                    if containsAll(mime,"application") and not containsAll(mime,"php") :
+                        t = mime.split('/')
+                        val["type"] = unicode(t[len(t) -1], 'utf-8') 
+                        val["value"] = dirOrFile
+                        val["url"] = path
+                        typeToAdd = unicode("document", 'utf-8') 
+                    else:
+                        val["value"] = "http://"+path
+                        typeToAdd = unicode("url", 'utf-8') 
+
+                if typeToAdd != "":
+                    write_result(typeToAdd, val)
+                sys.stdout.flush()
+
+                donePaths.append(path)
+            elif os.path.isdir(path):
+                readfiles(path)
+            
+
+class mirror(Thread):
+   def __init__ (self,website,name):
+      Thread.__init__(self)
+      self.website = website
+      self.name = name
+   def run(self):
+       os.popen("mirrortool --dir %s %s%s"%(name, depth, website))
+
+        
+
+
+th = mirror(website,name)
+th.start()
+end = 0
+while end < 5:
+    if os.path.isdir(name):
+        result = readfiles(name)
+    else:
+        time.sleep(1)
+
+    if not th.isAlive():
+        time.sleep(1)
+        end +=1
+
+
+os.popen("rm -r "+ name)
+
+

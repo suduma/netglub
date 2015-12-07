@@ -1,0 +1,20 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="DnsWebsiteToDomain" longName="To Domain [parse]" type="generic" >
+  <description>Find the Domain of a DNS Name or a website</description>
+  <parameters>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="dns-name" />
+    <entity type="website" />
+    <entity type="mx-record" />
+    <entity type="ns-record" />
+  </input>
+  <output>
+    <entity type="domain-name" />
+  </output>
+</transform>

@@ -1,0 +1,25 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="IpToPorts" longName="To Ports [Nmap]" type="generic" >
+  <description>Transforms an IP or an IP range to a list of ports</description>
+  <parameters>
+    <param name="aggressiveness" longName="Nmap aggressiveness" description="Nmap -T option's value" default="5" optional="true" level="advanced" format="int">
+      <int min="1" max="5"/>
+    </param>
+    <param name="option" longName="Special options" description="if a special type of scan is needed" default="normal" optional="true" level="advanced" format="enum">
+      <enum value="-sU -sS " label="normal"/>
+      <enum value="-sT " label="TCP connect scan"/>
+      <enum value="-sY " label="SCTP INIT scan"/>
+      <enum value="-sN " label="TCP NULL scan"/>
+      <enum value="-sF " label="TCP FIN scan"/>
+      <enum value="-sX " label="TCP Xmas scan"/>
+      <enum value="-sW " label="TCP Window scan"/>
+    </param>
+  </parameters>
+  <input>
+    <entity type="ip-address" />
+  </input>
+  <output>
+    <entity type="port" />
+  </output>
+</transform>

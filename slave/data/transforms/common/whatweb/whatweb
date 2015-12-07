@@ -1,0 +1,827 @@
+#!/usr/bin/env ruby
+# WhatWeb - Next generation web scanner.
+# Author: Andrew Horton aka urbanadventurer, MorningStar Security
+# http://www.morningstarsecurity.com/research/whatweb
+
+=begin
+Copyright 2009, 2010 Andrew Horton
+
+This file is part of WhatWeb.
+
+WhatWeb is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 2 of the License, or
+(at your option) any later version.
+
+Foobar is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+=end
+
+require 'getoptlong'
+require 'pp'
+require 'net/http'
+require 'net/https'
+require 'open-uri'
+require 'cgi'
+require 'thread'
+require 'md5'
+
+# add the directory of the file currently being executed to the load path
+$LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__))) unless
+    $:.include?(File.dirname(__FILE__)) || $LOAD_PATH.include?(File.expand_path(File.dirname(__FILE__)))
+$LOAD_PATH << "/usr/share/whatweb/"
+
+require 'lib/output.rb'
+require 'lib/colour.rb'
+require 'lib/anemone/anemone.rb'
+
+
+$VERSION="0.4.3"
+# look through LOAD_PATH for the following plugin directories. Could be in same dir as whatweb or /usr/share/whatweb, etc
+PLUGIN_DIRS=[ "plugins", "my-plugins"].map {|x| $LOAD_PATH.map {|y| y+"/"+x if File.exists?(y+"/"+x) } }.flatten.compact
+
+$verbose=0
+$USE_EXAMPLE_URLS=false
+$use_colour="auto"
+$USER_AGENT="WhatWeb/#{$VERSION}"
+$MAX_THREADS=25
+$AGGRESSION=1
+$RECURSIVE=false
+$RECURSIVE_DEPTH=10
+$MAX_LINKS_TO_FOLLOW=250
+$NO_REDIRECT=false
+
+$USE_PROXY=false
+$PROXY_HOST=nil
+$PROXY_PORT=8080
+$PROXY_USER=nil
+$PROXY_PASS=nil
+
+module PluginSugar
+  def def_field(*names)
+    class_eval do 
+      names.each do |name|
+        define_method(name) do |*args|
+          case args.size
+          when 0 then instance_variable_get("@#{name}")
+          else    instance_variable_set("@#{name}", *args)
+          end
+        end
+      end
+    end
+  end
+end
+
+class Plugin
+  attr_accessor :base_uri
+  @registered_plugins = {}
+ 
+  class << self
+    attr_reader :registered_plugins    
+    private :new
+    attr_reader :locked
+    @locked=false
+  end
+
+  def self.define(name, &block)
+    p = new
+    p.instance_eval(&block)
+    Plugin.registered_plugins[name] = p
+  end
+
+  def lock
+  	@locked=true
+  end
+  
+  def unlock
+  	@locked=false
+  end
+  
+  def locked?
+  	@locked
+  end
+
+  def init (body=nil,meta={},cookies=nil,status=nil,base_uri=nil)
+  	@body=body
+  	@meta=meta
+  	@cookies=cookies
+  	@status=status
+  	@base_uri=base_uri
+  end
+
+# execute plugin
+  def x
+  	# find the regular expressions in the matches array
+  	results=[]
+  	
+  	unless @matches.nil?
+ 		puts ":regexp matches" if $verbose > 3
+		results = 	@matches.map {|match| match if !match[:regexp].nil? and @body =~ match[:regexp] }.compact
+
+ 		puts ":ghdb matches" if $verbose > 3		
+		# do GHDB matches
+		results += @matches.map {|match| match if !match[:ghdb].nil? and match_ghdb(match[:ghdb], @body, @meta, @status, @base_uri) }.compact
+
+ 		puts ":text matches" if $verbose > 3
+		results += @matches.map {|match| match if !match[:text].nil? and @body.include?(match[:text]) }.compact
+	end
+	
+	# if the plugin has a passive method, use it
+   	results += self.passive if defined? self.passive
+
+	# if the plugin has an aggressive method and we're in aggressive mode, use it
+	# or if we're guessing all URLs
+	if ($AGGRESSION == 3 and !results.empty?) or ($AGGRESSION == 4)
+		results += self.aggressive if defined? self.aggressive	
+		
+		#puts "."
+		# if the plugin has extra URLs then use them if aggressive		
+		# we're obviously in the business of guessing URLs now
+		#pp @extra_urls
+		unless @extra_urls.nil?		
+			#puts "extra_urls, not nil"
+			@extra_urls.map do |x|
+			
+				#pp Thread.main["targets"]
+				target = URI.join(@base_uri.to_s,x).to_s
+				Thread.main["targets"] << target
+				#puts "added #{target}"
+				#pp Thread.main["targets"]
+			end
+		end
+	end
+	
+
+	
+	# clean up results
+	results.each do |r|
+		if !r[:string].nil?
+			if r[:string].is_a?(String)
+				r[:string].delete!("\n\x0d\x09\x0a")
+				r[:string].strip!
+			end	
+		end
+	end
+		
+	results
+  end
+
+  extend PluginSugar
+  def_field :author, :version, :examples, :description, :matches, :extra_urls
+end
+
+
+
+def plugin_list
+	puts "Plugins Loaded"
+	puts "-" * 30
+	Plugin.registered_plugins.sort.each do |n,p|
+		puts [n, p.version].join(",")		
+	end
+	puts
+end
+
+def plugin_info(list= nil)
+	puts "Plugin Information"
+	puts "-" * 30
+	
+	( unless list.empty? 
+		list.map {|x| [x,Plugin.registered_plugins[x]] }
+	  else
+	  	Plugin.registered_plugins.sort
+	  end
+	).each do |name,plugin|
+		puts "#{name} version " + plugin.version
+	       
+		print plugin.examples.is_a?(Array) ? "[#{plugin.examples.size}]" : "[ ]"
+		print " examples, "
+
+		print plugin.matches.is_a?(Array) ? "[#{plugin.matches.size}]" : "[ ]"
+		print " matches, "
+		
+		print defined?(plugin.aggressive) ? "[x]" : "[ ]"		
+		print " aggressive, "
+
+		print defined?(plugin.passive) ? "[x]" : "[ ]"
+		puts " passive."
+		
+		puts "Description: "+( plugin.description.nil? ? "" : plugin.description)
+		puts
+		puts "-" * 80
+	end
+	puts
+end
+
+
+def load_plugins(plugin_list = nil)
+	plugins=PLUGIN_DIRS.map {|x| "#{x}/*.rb" }
+	if plugin_list.nil?				
+		Dir.glob(plugins).each {|x| load x }
+	else		
+		Dir.glob(plugins).each {|x| load x if plugin_list.include?(x)}
+	end	
+end
+
+
+def select_plugins(requested_plugin_names = nil)
+	# run all plugins, or run the specific set
+	# convert cmdline list of plugins to lowercase
+	plugins_to_use = (
+		unless requested_plugin_names.nil?
+			# find unrecognised, requested plugins
+			requested_plugin_names.each {|x| x.downcase! }
+			names_of_loaded_plugins = Plugin.registered_plugins.map {|n,p| n.downcase }
+		
+			requested_plugin_names.each do |cmdplugin|
+				unless names_of_loaded_plugins.include?(cmdplugin)
+					puts "Plugin: #{cmdplugin} not recognised."
+				end
+			end		
+			# case insensitive selection
+			Plugin.registered_plugins.map {|name,plugin| [name,plugin] if requested_plugin_names.include?(name.downcase) }.compact.sort
+		else
+			Plugin.registered_plugins.sort_by {|x| x[0] }
+		end
+	)
+end
+
+def make_target_list(cmdline_args, inputfile=nil,pluginlist = nil)
+	url_list = cmdline_args
+
+	# read each line as a url, skipping lines that begin with a #
+	if !inputfile.nil? and File.exists?(inputfile)
+		pp "loading input file: #{inputfile}" if $verbose > 2
+		url_list += File.read(inputfile).to_a.each {|line| line.strip! }.delete_if {|line| line =~ /^#.*/ }.each {|line| line.delete!("\n") }
+	end
+
+	# add example urls to url_list if required. plugins must be loaded already
+	if $USE_EXAMPLE_URLS
+		url_list += pluginlist.map {|name,plugin| plugin.examples unless plugin.examples.nil? }.compact.flatten
+	end
+
+	#make urls friendlier, test if it's a file, if test for not assume it's http://
+	# http, https, ftp, etc
+	url_list=url_list.map do |x|   
+		if File.exists?(x)
+			x
+		else
+			if x =~ (/^[a-z]+:\/\//)
+				x
+			else
+				x.sub(/^/,"http://")
+			end
+		end	
+	end
+
+	url_list=url_list.flatten #.sort.uniq
+end
+
+
+def probability_to_words(p)
+	case p
+		when 0..49
+			"maybe"
+		when 50..99
+			"probably"
+		when 100
+			"certain"
+	end
+end
+
+def match_ghdb(ghdb, body, meta, status, base_uri)
+	# this could be made faster by creating code to eval once for each plugin
+
+	pp "match_ghdb",ghdb if $verbose > 2
+	
+	# take a GHDB string and turn it into code to be evaluated
+	matches=[] # fill with true or false. succeeds if all true
+	s = ghdb
+
+	# does it contain intitle?
+	if s =~ /intitle:/i
+		# extract either the next word or the following words enclosed in "s, it can't possibly be both
+		intitle = (s.scan(/intitle:"([^"]*)"/i) + s.scan(/intitle:([^"]\w+)/i)).to_s
+		matches << ((body =~ /<title>[^<]*#{intitle}[^<]*<\/title>/i).nil? ? false : true)
+		# strip out the intitle: part
+		s=s.gsub(/intitle:"([^"]*)"/i,'').gsub(/intitle:([^"]\w+)/i,'')
+	end
+
+	if s =~ /filetype:/i
+		filetype = (s.scan(/filetype:"([^"]*)"/i) + s.scan(/filetype:([^"]\w+)/i)).to_s
+		# lame method: check if the URL ends in the filetype
+		unless base_uri.nil?
+			matches << ((base_uri.path.split("?")[0] =~ /#{filetype}$/i).nil? ? false : true)
+		end
+		s=s.gsub(/filetype:"([^"]*)"/i,'').gsub(/filetype:([^"]\w+)/i,'')
+	end
+
+	if s =~ /inurl:/i
+		inurl = (s.scan(/inurl:"([^"]*)"/i) + s.scan(/inurl:([^"]\w+)/i)).flatten	
+		# can occur multiple times.
+		inurl.each {|x| matches << ((base_uri.to_s =~ /#{inurl}/i).nil? ? false : true)  }
+		# strip out the filetype: part
+		s=s.gsub(/inurl:"([^"]*)"/i,'').gsub(/inurl:([^"]\w+)/i,'')
+	end
+
+	# split the remaining words except those enclosed in quotes, remove the quotes and sort them
+
+	remaining_words = s.scan(/([^ "]+)|("[^"]+")/i).flatten.compact.each {|w| w.delete!('"')  }.sort.uniq
+	
+	pp "Remaining GHDB words", 	remaining_words if $verbose > 2
+	
+	remaining_words.each do |w| 	
+		# does it start with a - ?
+		if w[0..0] == '-'
+			# reverse true/false if it begins with a -
+			matches << ((body =~ /#{w[1..-1]}/i).nil? ? true : false) 
+		else
+			w = w[1..-1] if w[0..0] == '+' # if it starts with +, ignore the 1st char
+			matches << ((body =~ /#{w}/i).nil? ? false : true) 
+		end	
+	end
+
+	pp matches if $verbose > 2
+
+	# if all matches are true, then true	
+	if matches.uniq == [true]
+		true
+	else
+		false
+	end
+end
+
+
+def error(s)
+	# if colour
+	if ($use_colour=="auto") or ($use_colour=="always")
+		STDERR.puts red(s)
+	else
+		STDERR.puts s
+	end
+end
+
+
+
+
+# openuri's open seems great at first... but we're not using it anymore
+def open_with_openuri(target)
+	retries=0
+	begin
+	# uses open-uri
+		doc=open(target, "User-Agent"=>$USER_AGENT)
+		if $verbose > 2
+			pp doc.base_uri
+			pp doc.status
+			pp doc.meta
+		end
+		if $verbose > 3
+			pp doc.read
+			doc.rewind # undoes doc.read 
+		end
+		body=doc.read
+			
+	rescue NameError => err
+		error(target + " ERROR: Name error #{err}") if $verbose > 1
+		#Name error uninitialized constant OpenURI::Buffer::Tempfile http://100bestwebsites.org  -- no idea
+		# should retry at least 3 times
+		retries+=1
+		retry if retries < 3
+		return [0, nil, nil, nil]
+	rescue SocketError => err
+		error(target + " ERROR: Socket error #{err}") if $verbose > 1 # can't resolve
+		return [0, nil, nil, nil]
+	rescue TimeoutError => err
+		error(target + " ERROR: Timed out #{err}") if $verbose > 1
+		return [0, nil, nil, nil]
+	rescue EOFError => err
+		error(target + " ERROR: EOF error #{err}") if $verbose > 1
+		return [0, nil, nil, nil]
+	rescue StandardError => err
+	# 503 Service Unavailable http://2modern.com
+	# 500 Internal Server Error http://4yoursoul.com
+	# 404 Not Found
+	# 400 Bad Request
+	# 500 Server Error
+	# HTTP redirection loop: http://www.proactiv.com/browser/warning.php
+	# HTTP redirection loop: http://www.bevmo.com/Default.aspx
+	#
+		error(target + " ERROR: #{err}") if $verbose > 1
+		retries+=1
+		retry if retries < 3 and [503,500,400].include?(err.to_s.to_i)
+		return [err.to_s.to_i, nil, nil, nil]
+	end
+	[doc.status[0].to_i,doc.base_uri,body,doc.meta]
+end
+
+
+def open_target(target)
+	# follow 301's
+	begin
+		uri=URI.parse(target)
+		path=uri.path
+		path="/" if uri.path==""
+		query=uri.query
+		
+		if $USE_PROXY == true
+			http=Net::HTTP::Proxy($PROXY_HOST,$PROXY_PORT, $PROXY_USER, $PROXY_PASS).new(uri.host,uri.port)
+		else
+			http=Net::HTTP.new(uri.host,uri.port)
+		end
+		
+		#puts path -- path doesn't include parameters
+		
+		# if it's https://
+		# i wont worry about certificates, verfication, etc
+		if uri.class == URI::HTTPS
+			http.use_ssl = true	
+			http.verify_mode = OpenSSL::SSL::VERIFY_NONE		
+		end
+		
+		req=Net::HTTP::Get.new(path + (query.nil? ? "" : "?" + query ) ,{"User-Agent"=>$USER_AGENT})
+		res=http.request(req)		
+		
+		headers={}; res.each_header {|x,y| headers[x]=y }
+		body=res.body
+		status=res.code.to_i
+		puts uri.host.to_s + path + (query.nil? ? "" : "?" + query ) + " [#{status}]" if  $verbose > 0 
+		cookies=res.get_fields('set-cookie')
+		
+	rescue SocketError => err
+		error(target + " ERROR: Socket error #{err}")
+		return [0, nil, nil, nil]
+	rescue TimeoutError => err
+		error(target + " ERROR: Timed out #{err}")
+		return [0, nil, nil, nil]
+	rescue EOFError => err
+		error(target + " ERROR: EOF error #{err}")
+		return [0, nil, nil, nil]
+	rescue StandardError => err
+		error(target + " ERROR: #{err}")
+	rescue => err
+		error(target + " ERROR: #{err}")	
+	end
+	[status,uri,body,headers,cookies]
+end
+
+
+def run_plugins(target,body,headers=nil,cookies=nil,status=nil,url=nil)
+		#pp target, body, headers, status, url
+
+		results=[]		
+		$plugins_to_use.each do |name,plugin|
+			begin
+				pp "Trying plugin " + name + " against " + target.to_s if $verbose>1
+				
+				while plugin.locked?
+					sleep 0.5
+					puts "waiting for plugin:#{name} to unlock" if $verbose > 2
+				end
+				plugin.lock
+
+				if target =~ /^[a-z]+:\/\//
+					pp "target is a string url" if $verbose > 2
+					# it's a uri, with meta data, etc - #status,url,body,headers
+					plugin.init(body,headers,cookies,status,url)
+				else
+					puts "target is a file" if $verbose > 2
+					# it's a file
+					plugin.init(body)
+				end
+				
+				# eXecute the plugin
+				result=plugin.x
+				plugin.unlock
+				
+			rescue StandardError => err
+				puts "ERROR: Plugin #{name} failed. #{err}"
+				plugin.unlock
+			end
+			pp [name,result] if $verbose > 2
+			results << [name, result ] unless result.nil? or result.empty?
+		end
+	results
+end
+
+
+def usage()
+puts "WhatWeb - Next generation web scanner.\nVersion #{$VERSION} by Andrew Horton aka urbanadventurer, MorningStar Security"
+puts "http://www.morningstarsecurity.com/research/whatweb"
+puts
+puts "Usage: whatweb [options] <URLs>"
+puts "
+<URLs>\t\t\tEnter URLs or filenames. Use /dev/stdin to pipe HTML directly
+--input-file=FILE, -i\tIdentify URLs found in FILE
+--aggression, -a\t1 passive - on-page
+\t\t\t2 polite - follow on-page links if in the extra-urls list (default)
+\t\t\t3 impolite - try extra-urls when plugin matches (smart, guess a few urls)
+\t\t\t4 aggressive - try extra-urls for every plugin (guess a lot of urls)
+--recursion, -r\t\tFollow links recursively. Only follows links under the path (default: off)
+--depth, -d\t\tMaximum recursion depth (default: #{$RECURSIVE_DEPTH})
+--max-links, -m\t\tMaximum number of links to follow on one page (default: #{$MAX_LINKS_TO_FOLLOW})
+--list-plugins, -l\tList the plugins
+--run-plugins, -p\tRun comma delimited list of plugins. Default is to run all
+--info-plugins, -I\tDisplay information about a comma delimited list of plugins. Default is all
+--example-urls, -e\tAdd example urls for each plugin to the target list
+--colour=[WHEN],\n--color=[WHEN]\t\tcontrol whether colour is used. WHEN may be `never', `always', or `auto'
+--log-full=FILE\t\tLog verbose output
+--log-brief=FILE\tLog brief, one-line output
+--log-xml=FILE\t\tLog XML format
+--user-agent, -U\tIdentify as user-agent instead of WhatWeb/VERSION.
+--max-threads, -t\tNumber of simultaneous threads identifying websites in parallel. Default is #{$MAX_THREADS}.
+--no-redirect\t\tDo not follow HTTP 3xx redirects.
+--proxy, -t\t\t<hostname[:port]> Set proxy hostname and port (default: #{$PROXY_PORT})
+--proxy-user, -t\t<username:password> Set proxy user and password
+--help, -h\t\tThis help
+--verbose, -v\t\tIncrease verbosity (recommended), use twice for debugging.
+--version\t\tDisplay verion information.\n\n"
+end
+
+
+
+
+
+
+
+
+run_plugins_list=nil
+input_file=nil
+output_list = [ OutputBrief.new ] # by default output brief
+
+
+opts = GetoptLong.new(
+      [ '--help', '-h', GetoptLong::NO_ARGUMENT ],
+      [ '-v','--verbose', GetoptLong::NO_ARGUMENT ],
+      [ '-l','--list-plugins', GetoptLong::NO_ARGUMENT ],
+      [ '-p','--run-plugins', GetoptLong::REQUIRED_ARGUMENT ],
+      [ '-I','--info-plugins', GetoptLong::OPTIONAL_ARGUMENT ],
+      [ '-e','--example-urls', GetoptLong::NO_ARGUMENT ],
+      [ '--colour','--color', GetoptLong::REQUIRED_ARGUMENT ],
+      [ '--log-full', GetoptLong::REQUIRED_ARGUMENT ],
+      [ '--log-brief', GetoptLong::REQUIRED_ARGUMENT ],
+      [ '--log-xml', GetoptLong::REQUIRED_ARGUMENT ],
+      [ '-i','--input-file', GetoptLong::REQUIRED_ARGUMENT ],
+      [ '-U','--user-agent', GetoptLong::REQUIRED_ARGUMENT ],
+      [ '-a','--aggression', GetoptLong::REQUIRED_ARGUMENT ],
+      [ '-t','--max-threads', GetoptLong::REQUIRED_ARGUMENT ],
+      [ '-m','--max-links', GetoptLong::REQUIRED_ARGUMENT ],
+      [ '-r','--recursive', GetoptLong::NO_ARGUMENT ],
+      [ '-d','--depth', GetoptLong::REQUIRED_ARGUMENT ],
+      [ '--no-redirect', GetoptLong::NO_ARGUMENT ],
+      [ '--proxy', GetoptLong::REQUIRED_ARGUMENT ],
+      [ '--proxy-user', GetoptLong::REQUIRED_ARGUMENT ],
+      [ '--version', GetoptLong::NO_ARGUMENT ]
+    )
+begin    
+	opts.each do |opt, arg|
+		case opt
+			when '-i','--input-file'
+					input_file=arg
+	   	    when '-l','--list-plugins'
+	   	    		load_plugins
+		         	plugin_list
+		         	exit
+		    when '-p','--run-plugins'
+		            run_plugins_list=arg.split(",")
+		    when '-I','--info-plugins'                
+					load_plugins
+					plugin_info(arg.split(","))
+					exit
+		    when '-e','--example-urls'
+		    		$USE_EXAMPLE_URLS=true
+		    when '--color','--colour'
+		    		case arg
+		    		when 'auto'
+		    			$use_colour="auto"
+		    		when 'always'
+		    			$use_colour="always"
+		    		when 'never'
+		    			$use_colour=false
+		    		else
+		    			raise("--colour argument not recognized")
+		    		end
+			when '--log-full'
+					output_list << OutputFull.new(arg)
+			when '--log-brief'
+				 	output_list << OutputBrief.new(arg)
+			when '--log-xml'
+				 	output_list << OutputXML.new(arg)
+		    when '-U','--user-agent'
+			  		$USER_AGENT=arg
+		    when '-t','--max-threads'
+			  		$MAX_THREADS=arg.to_i
+			when '-a','--aggression'
+					$AGGRESSION=arg.to_i
+			when '-r','--recursive'
+					$RECURSIVE=true	    		
+			when '-d','--depth'
+					$RECURSIVE_DEPTH=arg.to_i
+			when '-m','--max-links'	    		
+					$MAX_LINKS_TO_FOLLOW=arg.to_i
+			when '--proxy'
+					$USE_PROXY=true
+					$PROXY_HOST = arg.to_s.split(":")[0]
+					$PROXY_PORT = arg.to_s.split(":")[1] if arg.to_s.include?(":")		
+			when '--proxy-user'
+					$PROXY_USER=arg.to_s.split(":")[0]
+					$PROXY_PASS=arg.to_s.split(":")[1] if arg.to_s.include?(":")
+			when '--no-redirect'					
+					$NO_REDIRECT=true
+		    when '-h','--help'
+		            usage
+		            exit
+			when '-v','--verbose'
+		         	$verbose=$verbose+1
+			when '--version'
+		         	puts "WhatWeb version #{$VERSION} ( http://www.morningstarsecurity.com/research/whatweb/ )"
+		         	exit
+		end
+	end		
+rescue GetoptLong::Error => err
+	puts
+	usage
+	exit
+end
+
+pp "Use_color:"+$use_colour if $verbose >1
+
+pp "loading plugins" if $verbose > 1
+load_plugins # load all the plugins
+
+$plugins_to_use = select_plugins(run_plugins_list) # make the list of selected plugins
+pp $plugins_to_use if $verbose >1 
+
+# are the no plugins?
+if $plugins_to_use.size == 0
+	puts "No plugins selected, exiting."
+	exit
+end
+
+# clean up urls, add example urls if needed
+$targets=make_target_list(ARGV, input_file, $plugins_to_use)
+pp "Targets: " ,$targets if $verbose>1
+
+# fail & show usage if no targets.
+if $targets.size <1
+	usage
+	exit
+end
+
+output_list << OutputFull.new() if $verbose > 1 # full output if -vv
+
+# for each target, we try each plugin then print the results
+semaphore=Mutex.new
+Thread.abort_on_exception = true
+
+#	while !$new_target_stack.empty?  # plugins can add targets to the new target stack
+#		target = $new_target_stack.pop
+#	end # new target stack
+
+def next_target
+#	pp  Thread.main["targets"]
+
+	if Thread.main["targets"].size >0
+		new=Thread.main["targets"].pop
+		$targets << new
+	end
+
+ 	$targets.pop
+end
+
+
+#$targets.each do |target|
+#target=next_target
+#while !target.nil?
+#target=0
+
+Thread.main["targets"]=[]
+#Thread.main["targets"] << "http://www.apple.com"
+
+while thistarget = next_target
+		puts "thread starting for #{thistarget}" if $verbose>1
+
+		Thread.new do
+			target = thistarget # we set the target within the thread
+			
+			# get the webpage	
+			# get the file/webpage, and return statuscode, base url, html body, html headers
+			# if target is a file
+			target_is_a_file=File.exists?(target)
+		
+			if $RECURSIVE == true and target_is_a_file == false
+
+				Anemone.crawl(target,
+				{"threads"=>1, "user_agent"=>$USER_AGENT, "depth_limit"=>$RECURSIVE_DEPTH}) do |anemone|
+					
+						anemone.skip_links_like /\.zip$/,/\.gz$/,/\.tar$/,/\.jpg$/,/\.exe$/,/\.png$/,/\.pdf$/
+						anemone.focus_crawl { |page| page.links.slice(0..$MAX_LINKS_TO_FOLLOW) }
+						anemone.on_every_page do |page|
+						
+							# convert headers
+							headers=Hash.new
+							unless page.headers.nil?
+								page.headers.each {|k,v| headers[k]=v.to_s }
+							end
+												
+							#pp target,page.doc,page.headers,page.code,page.url
+						
+							unless page.original_doc.nil?
+								doc=page.original_doc
+								status=page.code
+#								url=URI::parse(page.url.to_s)
+								url=page.url
+# no @cookies for anemone :(
+								results = run_plugins(url.to_s,doc,headers,nil,status,url)
+								# reporting
+								# multiple output plugins simultaneously, some stdout, some files
+								semaphore.synchronize do # mutex is right?
+									output_list.each do |o|
+										o.out(url, status, results)
+									end
+								end
+							end
+
+						end
+				end
+		
+			else
+			# Recursive is false
+
+			
+
+			# follow redirects
+			no_redirects =false
+			num_redirects = 0
+			while no_redirects == false do
+				# if we redirect 10 times we give up
+				if num_redirects == 10
+					error(target + " ERROR: Too many redirects")
+					no_redirects=true
+					next
+				end
+		
+				# either not recursive, or a file
+				if target_is_a_file == true
+					# target is a file
+					doc=open(target)
+					body=doc.read
+					no_redirects=true
+				else
+					# not a file, not recursive
+					#status,url,body,headers = open_with_openuri(target)
+					status,url,body,headers,cookies = open_target(target)
+					if status == 0 or status.nil?
+						no_redirects=true
+						next
+					end	
+				end
+
+				results = run_plugins(target,body,headers,cookies,status,url)
+			
+				# reporting
+				# multiple output plugins simultaneously, some stdout, some files
+				semaphore.synchronize do # mutex is right?
+					output_list.each do |o|
+						o.out(target, status, results)
+					end
+				end
+			begin		
+				if status == 301 or status == 302 or status == 307
+					t=URI.parse(headers["location"])
+					if t.relative?
+						target="http://"+URI.parse(target).host
+						target +="/" if headers["location"][0..0]!="/"
+						target += headers["location"]					
+					else
+						target=headers["location"]
+					end
+					num_redirects+=1
+				else
+					no_redirects=true
+				end	
+			rescue => err
+				error(target + " ERROR: #{err}")
+				no_redirects=true
+			end
+			
+			no_redirects = true if $NO_REDIRECT==true
+			end # while no_redirects
+			end # if $RECURSIVE
+	
+		end # Thread.new
+
+		while Thread.list.length>($MAX_THREADS+1)
+			puts "sleeping" if $verbose>1
+			sleep 1
+		end
+end # targets.each
+
+while Thread.list.length>1
+	puts "waiting for #{Thread.list.size-1} threads to exit" if $verbose>1
+	sleep 1	
+end
+

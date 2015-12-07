@@ -1,0 +1,60 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import os, re, sys, select, subprocess
+from generic_transform import * 
+
+sys.path.append('../common/iplib/')
+
+import iplib
+
+
+e_type,e_values,params = get_from_args()
+
+
+aggressiveness = '-T 5 '
+
+
+ipblock=e_values["value"]
+
+
+    
+regexIP = re.compile('Interesting\sports\son\s.*?(\(.*?\)):')
+regex = re.compile('\n(\d*)/(\w*)\s*(\s*.*?)\s\w+',re.VERBOSE)
+
+if "aggressiveness" in params:
+  aggressiveness = "-T " + params["aggressiveness"]+ " "
+
+
+process = subprocess.Popen("sudo nmap -sS " + aggressiveness + ipblock,
+                             shell=True, stdout=subprocess.PIPE, bufsize=1, 
+                             universal_newlines=True, close_fds=True)
+
+ipP=''
+while not process.poll() :
+  ready = select.select([process.stdout],[],[], .5)
+  if ready != ([],[],[]):
+    line = ready[0][0].readline()
+    if line.startswith("# Nmap done") or line.startswith("Nmap done"):
+      break
+    elif line.startswith("Interesting ports"):
+        ipg = regexIP.search(line)
+        ipP =''
+        if ipg:
+            ipP = ipg.group(1)
+    
+    m = re.findall(regex,line)
+    if len(m)>0:
+      val = {}
+      val["host"] = unicode(ipP, 'utf-8')
+      val["value"] = unicode(m[0][0], 'utf-8')
+      val["process"] = unicode(m[0][1], 'utf-8')
+      val["status"] = unicode(m[0][2], 'utf-8')
+      if val["value"] <> '' and val["process"] <> '' and val["status"] <> '':
+         write_result("port", val)
+         sys.stdout.flush()
+
+if process.returncode != 0:
+  write_error("Nmap failed")
+  sys.exit(1)
+

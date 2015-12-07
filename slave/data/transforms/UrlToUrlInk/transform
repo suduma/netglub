@@ -1,0 +1,89 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import re, urllib, sys, time, urllib2, os
+from generic_transform import * 
+   
+e_type,e_values,params = get_from_args()
+
+NbResult = 20
+if "NbResult" in params:
+  NbResult = int(params["NbResult"])
+  if NbResult > 100 :
+    NbResult = 100
+  elif NbResult < 1:
+    NbResult = 1
+
+TimeOut = 5
+if "TimeOut" in params:
+  TimeOut = int(params["TimeOut"])
+  if TimeOut > 30 :
+    TimeOut = 30
+  elif TimeOut < 1:
+    TimeOut = 1
+
+
+result=[]
+search =e_values["value"]
+regexY = re.compile('<span\sclass=\"url\">(.*?)</span>',re.VERBOSE)
+regexG = re.compile('<p><a\shref=\"(\w{2,6}://.*?)\">',re.VERBOSE)
+regexT = re.compile('<title>(.*?)</title')
+page=0
+b = True
+tablang = ['fr','us','uk','de','es']
+
+lang = ''
+google = ['http://www.google.','/search?q=link%3A','&ie=UTF-8&start=','&sa=N']
+yahoo = ['http://siteexplorer.search.yahoo.com/','/search?p=','&bwm=i&b=']
+
+start = time.time()
+while len(result) < NbResult  and time.time()-start < TimeOut:
+    for lang in tablang:
+        if not b or time.time()-start > TimeOut:
+            break
+        yahooUrl = [urllib.urlopen(yahoo[0]+lang+yahoo[1]+search+yahoo[2]+str(page*100+1)).read(),regexY]
+        googleUrl = ''
+        try:
+            if lang == 'uk':
+                lang = 'com'
+            results_web = google[0]+lang+google[1]+search+google[2]+str(page*10)+google[3]
+            request_web = urllib2.Request(results_web)
+            request_web.add_header('User-Agent','Mozilla/4.0 (compatible; MSIE 5.5; Windows NT 5.0)')
+            opener_web = urllib2.build_opener()
+            text = opener_web.open(request_web).read()
+            googleUrl = [text,regexG]
+        except: 
+            pass
+
+        for url in [googleUrl,yahooUrl]:
+            if not b or time.time()-start > TimeOut:
+                break
+            lines  = url[1].findall(url[0])
+            for line in lines:
+                if len(line)> 0:
+                    res =line
+                    if res not in result:
+                        result.append(res)
+                        val={}
+                        codehtml = urllib.urlopen(res).read()
+                        titlere = regexT.search(codehtml)
+                        if titlere:
+                            try:
+                                val["title"]= unicode(titlere.group(1), 'utf-8')
+                            except:
+                                val["title"]= "Unknown"
+                            
+                        val["value"] = unicode(res, 'utf-8')
+                        write_result("url", val)
+                        sys.stdout.flush()
+                        if len(result)>=NbResult or time.time()-start > TimeOut:
+                            b=False
+                            break
+    page += 1
+
+if time.time()-start > TimeOut:
+    write_progress(100,'% : time elapsed')
+
+
+
+

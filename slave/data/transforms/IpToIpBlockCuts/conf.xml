@@ -1,0 +1,20 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="IpToIpBlockCuts" longName="To Ip Block [Cuts]" type="generic" >
+  <description>get ip blocks from ip by extending it.</description>
+  <parameters>
+    <param name="block-size" longName="Block Size" description="The size of the returned block" default="256" optional="true" level="default" format="int">
+      <int min="1" max="16777216"/>
+    </param>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="ip-address" />
+  </input>
+  <output>
+    <entity type="ip-block" />
+  </output>
+</transform>

@@ -1,0 +1,16 @@
+<?xml version='1.0'?>
+<!DOCTYPE EntitySchema>
+<entity name="document" longName="Document" color="#7b68ee" pngImage="image.png" svgImage="image.svg"><!-- Format color : #RRGGBB where R,G and B are hexa digits -->
+  <description>Document</description>
+  <fieldList>
+    <field name="value" longName="Document" description="document title" default="" level="default" format="string" optional="false" ioMode="input">
+      <string regex=".*"/>
+    </field>
+    <field name="url" longName="Location's url" description="document url" default="" level="default" format="string" optional="false" ioMode="input">
+      <string regex="\w{3,5}://.*\.\w{1,5}" dotall="false"/>
+    </field>
+    <field name="type"  longName="document type" description="document type" default=".pdf" optional= "true" level="default" format="string" optional="false" ioMode="input">
+      <string regex="\.\w{1,5}"/>
+    </field>
+  </fieldList>
+</entity>

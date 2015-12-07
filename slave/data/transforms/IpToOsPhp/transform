@@ -1,0 +1,38 @@
+#!/usr/bin/php -q
+
+<?php
+
+require("generic_transform.php");
+
+$res = get_from_args();
+if( ! $res )
+  die("Invalid input !");
+list($e_type,$e_val,$params) = $res;
+
+$t_param = "";
+if(in_array("aggressiveness",$params))
+  $t_param = "-T " + $params["aggressiveness"];
+
+$cmd = "sudo nmap -n -O -oG - $t_param '${e_val["value"]}' 2>/dev/null";
+exec($cmd,$output,$return);
+
+if( $return != 0)
+{
+  write_error("Nmap exec failed ! $return");
+  return 1;
+}
+
+for($i = 0; $i < sizeof($output); $i++)
+{
+  $matches = array();
+  if(preg_match('/Host:\s+([\d.]+)\s+.+\s+OS:\s+(.+)\s+Seq Index:/', $output[$i],$matches))
+  {
+    $val = array();
+    $val["host"] = $matches[1];
+    $val["value"] = $matches[2];
+    write_result("operating-system", $val);
+  }
+}
+
+?>
+

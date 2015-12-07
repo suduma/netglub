@@ -1,0 +1,25 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import re, sys, os
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+email = e_values["value"]
+regexE = re.compile('@(.*)',re.VERBOSE)
+regexD = re.compile(';;\sAUTHORITY\sSECTION:\s?\n(.*?)\.\s',re.VERBOSE)
+
+try:
+    dom = regexE.search(email).group(1)
+    lines = os.popen("dig "+ dom).read()
+    result = regexD.search(lines)
+except:
+    write_error('this kind of email is not handled')
+
+if result and lines.find('NOERROR')>-1:
+    val = {}
+    val["value"] = unicode(result.group(1), 'utf-8')
+    write_result("domain-name", val)
+    sys.stdout.flush()
+

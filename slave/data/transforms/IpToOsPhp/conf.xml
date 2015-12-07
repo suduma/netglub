@@ -1,0 +1,20 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="IpToOsPhp" longName="To Os [Php]" type="generic" >
+  <description>Transforms an IP or an IP range to a list of OSes (using PHP)</description>
+  <config>
+    <value name="need_root">true</value>
+  </config>
+  <parameters>
+    <param name="aggressiveness" longName="Nmap aggressiveness" description="Nmap -T option's value" default="5" optional="true" level="default" format="int">
+      <int min="1" max="5"/>
+    </param>
+  </parameters>
+  <input>
+    <entity type="ip-address" />
+    <entity type="ip-block" />
+  </input>
+  <output>
+    <entity type="operating-system" />
+  </output>
+</transform>

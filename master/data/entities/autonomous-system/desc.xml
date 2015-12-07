@@ -1,0 +1,10 @@
+<?xml version='1.0'?>
+<!DOCTYPE EntitySchema>
+<entity name="autonomous-system" longName="Autonomous System" color="#98fb98" pngImage="image.png" svgImage="image.svg"><!-- Format color : #RRGGBB where R,G and B are hexa digits -->
+  <description>Sur Internet, un Système Autonome (Autonomous System ou AS) est un ensemble de réseaux IP sous le contrôle d'une seule et même entité, typiquement un fournisseur d'accès à Internet ou une plus grande organisation qui possède des connexions redondantes avec le reste du réseau Internet.</description>
+  <fieldList>
+    <field name="value" longName="AS Number" description="Autonomous System value" default="1" level="default" format="int" optional="false" ioMode="input">
+      <int min="0"/>
+    </field>
+  </fieldList>
+</entity>

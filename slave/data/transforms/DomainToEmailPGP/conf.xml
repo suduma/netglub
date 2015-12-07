@@ -1,0 +1,17 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="DomainToEmailPGP" longName="To Email [PGP]" type="generic" >
+  <description>get the emails from pgp key server that finish with this domain.</description>
+  <parameters>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="domain-name" />
+  </input>
+  <output>
+    <entity type="email-address" />
+  </output>
+</transform>

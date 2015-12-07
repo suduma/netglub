@@ -1,0 +1,22 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="DDToIp" longName="To Ip Address [dig]" type="generic" >
+  <description>Transforms a domain name or Dns name to an IP using nslookup</description>
+  <parameters>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="dns-name" />
+    <entity type="mx-record" />
+    <entity type="ns-record" />
+  </input>
+  <output>
+    <entity type="ip-address" />
+    <entity type="dns-name" />
+    <entity type="mx-record" />
+    <entity type="ns-record" />
+  </output>
+</transform>

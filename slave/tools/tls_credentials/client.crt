@@ -1,0 +1,57 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 5 (0x5)
+        Signature Algorithm: sha1WithRSAEncryption
+        Issuer: C=FR, ST=Brittany, L=Brest, O=Diateam Corp., CN=Diateam CA
+        Validity
+            Not Before: Feb  4 11:01:01 2010 GMT
+            Not After : Feb  4 11:01:01 2011 GMT
+        Subject: C=FR, ST=Brittany, O=Diateam Corp., CN=Sample Slave
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+            RSA Public Key: (512 bit)
+                Modulus (512 bit):
+                    00:a5:ed:e1:cb:73:9b:b9:04:b9:52:aa:d5:8c:24:
+                    30:d5:f5:b8:b2:66:cf:6d:53:e1:1d:74:d5:0b:34:
+                    88:62:66:0e:e0:ac:34:97:59:6b:5b:f8:ab:5b:59:
+                    b9:68:86:19:43:dd:66:7a:eb:11:38:93:54:22:04:
+                    e8:82:2d:7d:9d
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            Netscape Cert Type: 
+                SSL Client, SSL Server
+            Netscape Comment: 
+                OpenSSL Generated Certificate
+            X509v3 Subject Key Identifier: 
+                5B:2A:26:A1:63:9A:11:67:15:3E:E3:59:23:D1:B7:B2:81:2F:40:A7
+            X509v3 Authority Key Identifier: 
+                keyid:23:19:86:5C:CB:A7:58:ED:EC:D7:E5:4D:96:06:50:94:63:8C:12:43
+
+    Signature Algorithm: sha1WithRSAEncryption
+        01:05:64:5a:03:b7:8b:d4:40:da:d7:b7:09:a5:ed:73:59:aa:
+        5a:fe:b1:29:25:44:74:5b:4b:97:d8:03:64:3c:3f:f5:64:53:
+        7b:21:ad:3b:7f:c9:47:5f:97:cc:3c:69:14:45:62:72:64:a6:
+        2e:77:82:05:eb:52:7b:c5:0b:3f:a8:93:94:ab:48:a6:dd:24:
+        5e:3a:a9:ae:47:ce:27:e4:ef:40:30:21:3b:32:56:41:16:b1:
+        96:f2:b7:b4:07:cd:16:15:75:d9:db:5d:95:42:e9:a8:0a:3d:
+        f2:59:bf:a4:d9:b3:cf:34:49:15:20:5c:15:63:19:4a:3b:33:
+        31:1e
+-----BEGIN CERTIFICATE-----
+MIICbjCCAdegAwIBAgIBBTANBgkqhkiG9w0BAQUFADBdMQswCQYDVQQGEwJGUjER
+MA8GA1UECBMIQnJpdHRhbnkxDjAMBgNVBAcTBUJyZXN0MRYwFAYDVQQKEw1EaWF0
+ZWFtIENvcnAuMRMwEQYDVQQDEwpEaWF0ZWFtIENBMB4XDTEwMDIwNDExMDEwMVoX
+DTExMDIwNDExMDEwMVowTzELMAkGA1UEBhMCRlIxETAPBgNVBAgTCEJyaXR0YW55
+MRYwFAYDVQQKEw1EaWF0ZWFtIENvcnAuMRUwEwYDVQQDEwxTYW1wbGUgU2xhdmUw
+XDANBgkqhkiG9w0BAQEFAANLADBIAkEApe3hy3ObuQS5UqrVjCQw1fW4smbPbVPh
+HXTVCzSIYmYO4Kw0l1lrW/irW1m5aIYZQ91meusROJNUIgTogi19nQIDAQABo4GP
+MIGMMAkGA1UdEwQCMAAwEQYJYIZIAYb4QgEBBAQDAgbAMCwGCWCGSAGG+EIBDQQf
+Fh1PcGVuU1NMIEdlbmVyYXRlZCBDZXJ0aWZpY2F0ZTAdBgNVHQ4EFgQUWyomoWOa
+EWcVPuNZI9G3soEvQKcwHwYDVR0jBBgwFoAUIxmGXMunWO3s1+VNlgZQlGOMEkMw
+DQYJKoZIhvcNAQEFBQADgYEAAQVkWgO3i9RA2te3CaXtc1mqWv6xKSVEdFtLl9gD
+ZDw/9WRTeyGtO3/JR1+XzDxpFEVicmSmLneCBetSe8ULP6iTlKtIpt0kXjqprkfO
+J+TvQDAhOzJWQRaxlvK3tAfNFhV12dtdlULpqAo98lm/pNmzzzRJFSBcFWMZSjsz
+MR4=
+-----END CERTIFICATE-----

@@ -1,0 +1,21 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="IpToOs" longName="To OS [Nmap]" type="generic" >
+  <description>Transforms an IP or an IP range to a list of OSes</description>
+  <parameters>
+    <param name="aggressiveness" longName="Nmap aggressiveness" description="Nmap -T option's value" default="5" optional="true" level="advanced" format="int">
+      <int min="1" max="5"/>
+    </param>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="ip-address" />
+    <entity type="ip-block" />
+  </input>
+  <output>
+    <entity type="operating-system" />
+  </output>
+</transform>

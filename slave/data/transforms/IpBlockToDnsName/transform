@@ -1,0 +1,52 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import sys, re, urllib, os
+from generic_transform import * 
+
+sys.path.append('../common/iplib/')
+
+import iplib
+
+e_type,e_values,params = get_from_args()
+
+server = ''
+if 'server' in params :
+  if params['server'] <> '' :
+    server = ''+params['server']
+
+ipblockRegexp = re.compile('(\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})(/)?(\d{1,2})\s')
+dnsnameEntry = re.compile('\sdomain\sname\spointer\s(.*?)\.\s')
+input = e_values["value"]
+
+
+
+try:
+  ipblock = iplib.CIDR(input)
+except ValueError:
+  write_error('invalid CIDR address')
+  sys.exit(1)
+
+ip = ipblock.get_first_ip()
+id = 0
+while ip <> ipblock.get_last_ip()+1 :
+  raw = os.popen('host '+str(ip)+' '+server)
+  lines = raw.readlines()
+  for line in lines :
+    rgv = dnsnameEntry.search(line)
+    if rgv :
+      valIp = {}
+      valDns = {}
+      valDns['value'] = unicode(rgv.group(1),'utf-8')
+      valDns["id"] = unicode(str(id+1),'utf-8')
+      valDns["parent-id"] = unicode(str(id),'utf-8')
+
+      valIp['value'] = unicode(str(ip),'utf-8')
+      valIp['id'] = unicode(str(id),'utf8')
+      write_result('ip-address',valIp)
+      sys.stdout.flush()
+      if valIp['value'] <> '' :
+        write_result('dns-name',valDns)
+        sys.stdout.flush()
+  ip = ip + 1
+  id = id + 2

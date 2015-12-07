@@ -1,0 +1,92 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import re, urllib, sys, time, urllib2,os
+import simplejson
+from generic_transform import * 
+   
+e_type,e_values,params = get_from_args()
+
+NbResult = 5
+
+if "NbResult" in params:
+  NbResult = int(params["NbResult"])
+  if NbResult > 100 :
+    NbResult = 100
+  elif NbResult < 1:
+    NbResult = 1
+
+TimeOut = 5
+if "TimeOut" in params:
+  TimeOut = int(params["TimeOut"])
+  if TimeOut > 30 :
+    TimeOut = 30
+  elif TimeOut < 1:
+    TimeOut = 1
+
+regexS = re.compile(";;\sANSWER\sSECTION:\s?(.*?);;\s?AUTHORITY\sSECTION:",re.VERBOSE | re.DOTALL);
+regexC = re.compile("\sIN\s(CNAME)|(A)\s(.*)\n",re.VERBOSE)
+regexU = re.compile(".{2,5}://(.*?)/.*?",re.VERBOSE)
+
+parent ="0"
+index =0;
+
+def dig(site):
+  lines = os.popen("dig " + site + " ANY").read()
+  answerSection = regexS.findall(lines)
+  if len(answerSection) >0:
+    isFqnd = regexC.findall(answerSection[0])
+    if len(isFqnd) > 0:
+      return "dns-name"
+    else:
+      return "domain-name"
+  else :
+    return ""
+
+resultSearch = []
+index = 1
+search = urllib.quote(e_values["value"])
+
+
+
+for j in range(0,NbResult,8):
+  query = urllib.urlencode({'q' : "site:%s"%search, 'rsz' : 'large', 'start': "%d"%j})
+  url = 'http://ajax.googleapis.com/ajax/services/search/web?v=1.0&%s' \
+    % (query)
+  search_results = urllib.urlopen(url)
+  json = simplejson.loads(search_results.read())
+  results = json['responseData']['results']
+
+  for i in results:
+    if len(resultSearch) > NbResult:
+      break
+    fqnd = regexU.findall(i['url'])[0]
+    typeOfFqnd = dig(fqnd)
+    if typeOfFqnd != "" and fqnd not in resultSearch:
+      resultSearch.append(fqnd)
+      topDomain = fqnd.split('.',1)[1]
+      typeOfTopDomain = dig(topDomain)
+      if typeOfTopDomain != "":
+        val = {}
+        val["value"] = topDomain
+        val["id"] = "%d"%index;
+        tmp = index
+        index +=1;
+        val["parent-id"] = "0"
+        write_result(typeOfTopDomain, val)
+        sys.stdout.flush()
+        val = {}
+        val["value"] = fqnd
+        val["id"] = "%d"%index;
+        index +=1;
+        val["parent-id"] = "%d"%tmp
+        write_result(typeOfFqnd, val)
+        sys.stdout.flush()
+
+      else:
+        val = {}
+        val["value"] = fqnd
+        write_result(typeOfFqnd, val)
+        sys.stdout.flush()
+
+

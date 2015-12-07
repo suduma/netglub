@@ -1,0 +1,23 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import select, sys, re, os
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+domain = e_values["value"].split('.',1)[1]
+
+whois = os.popen("whois %s"%domain).read()
+
+regex = re.compile(domain,re.I)
+count = len(regex.findall(whois))
+
+if (count > 1):
+  val = {}
+  val["value"] = domain
+  write_result("domain-name", val)
+  sys.stdout.flush()
+
+
+

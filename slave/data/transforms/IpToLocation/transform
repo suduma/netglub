@@ -1,0 +1,82 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import sys, re, urllib
+from generic_transform import * 
+
+sys.path.append('../common/geoLocationApi/')
+
+import pyipinfodb
+
+e_type,e_values,params = get_from_args()
+
+
+
+ip = e_values["value"]
+
+
+d = pyipinfodb.GetCity(ip)
+val = {}
+mainValue ="-,"
+if d.has_key('City'):
+  if d['City'] != "":
+    mainValue = d['City'] + ","
+if d.has_key('CountryName'):
+  if d['CountryName'] != "":
+    mainValue += d['CountryName']
+else:
+  mainValue += "-"
+
+if d.has_key('Longitude'):
+  if d['Longitude'] != "0":
+    val["longitude"] = d["Longitude"]
+if d.has_key('Latitude'):
+  if d['Latitude'] != "0":
+    val["latitude"] = d["Latitude"]
+
+
+if mainValue != "-,-" and val.has_key("latitude") and val.has_key("longitude"):
+  val["value"] =mainValue
+  if d.has_key('RegionName'):
+    if d['RegionName'] != "":
+      val["other"] = 'Region Name : ' + d["RegionName"]
+
+  write_result("location", val)
+  sys.stdout.flush()
+
+
+
+
+
+
+
+
+
+
+#url = 'http://www.infosniper.net/index.php?ip_address='+ip
+#codehtml = urllib.urlopen(url).readlines()
+
+#regex = re.compile('<td\sclass=\"content\-td2\">(.*?)\s?<',re.VERBOSE)
+
+#t={}
+
+#for line in range(0,len(codehtml)-1):
+#    for code in ['Country','Longitude','Latitude','State (Code)']:
+#        if codehtml[line].find(code)>-1:
+#            tmp = regex.search(codehtml[line+9])
+#            if tmp:
+#                t[code] = tmp.group(1)
+
+
+#try :
+#    val = {}
+#    val["value"] =unicode(t['Country'], 'utf-8')
+#    val["longitude"] = unicode(t['Longitude'], 'utf-8')
+#    val["latitude"] = unicode(t['Latitude'], 'utf-8')
+#    val["other"] = unicode('state:'+t['State (Code)'], 'utf-8')
+#    write_result("location", val)
+#    sys.stdout.flush()
+#except:
+#    write_error('ip not found')
+  
+

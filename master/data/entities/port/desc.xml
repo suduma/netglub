@@ -1,0 +1,18 @@
+<?xml version='1.0'?>
+<!DOCTYPE EntitySchema>
+<entity name="port" longName="Port" color="#a00a2a" pngImage="image.png" svgImage="image.svg"><!-- Format color : #RRGGBB where R,G and B are hexa digits -->
+  <description>port</description>
+  <fieldList>
+    <field name="value" longName="port" description="port" default="" level="default" format="string" ioMode="input">
+      <string regex=".*"/>
+    </field>
+    <field name="host" longName="host" description="host" default="" level="default" format="string" ioMode="input">
+      <string regex=".*"/>
+    </field>
+    <field name="filter" longName="filter" description="filter" default="" optional="true" level="advanced" format="bool" ioMode="output">
+    </field>
+    <field name="protocol" longName="protocol used" description="protocol" default="" level="advanced" format="string" ioMode="output">
+      <string regex=".*"/>
+    </field>
+  </fieldList>
+</entity>

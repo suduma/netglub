@@ -1,0 +1,17 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="EmailToEmailSamePGP" longName="To Email [Same PGP]" type="generic" >
+  <description>get the emails from pgp key server that use the same key as the input email.</description>
+  <parameters>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="email-address" />
+  </input>
+  <output>
+    <entity type="email-address" />
+  </output>
+</transform>

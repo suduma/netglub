@@ -1,0 +1,18 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="DomainIpToEmailWhois" longName="To Email [Whois]" type="generic" >
+  <description>get emails that are related to a domain or an ip address by whois request</description>
+  <parameters>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="domain-name" />
+    <entity type="ip-address" />
+  </input>
+  <output>
+    <entity type="email-address" />
+  </output>
+</transform>

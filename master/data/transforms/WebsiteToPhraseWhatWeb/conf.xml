@@ -1,0 +1,17 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="WebsiteToPhraseWhatWeb" longName="To componant infos [WhatWeb]" type="generic" >
+  <description>find the types of websites</description>
+  <parameters>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="website" />
+  </input>
+  <output>
+    <entity type="phrase" />
+  </output>
+</transform>

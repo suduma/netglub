@@ -1,0 +1,28 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="WebsiteToEntitiesNER" longName="To Personnal informations [NER]" type="generic" >
+  <description>Use OpenCalais and Alchemy to find entities (person, phrase, url, email, url)</description>
+  <parameters>
+    <param name="keyCallais" longName="Key To Use for Open calais" description="Open calais key" optional="true" level="advanced" format="string">
+      <string regex=".*"/>
+    </param>
+    <param name="keyAlchemy" longName="Key To Use for Alchemy" description="Alchemy key" optional="true" level="advanced" format="string">
+      <string regex=".*"/>
+    </param>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="website" />
+  </input>
+  <output>
+    <entity type="person" />
+    <entity type="phrase" />
+    <entity type="email-address" />
+    <entity type="location" />
+    <entity type="url" />
+    <entity type="operating-system" />
+  </output>
+</transform>

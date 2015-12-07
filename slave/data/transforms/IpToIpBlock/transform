@@ -1,0 +1,81 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import select, subprocess, sys, re, os, time, datetime, signal, socket
+from generic_transform import * 
+sys.path.append('../common/iplib/')
+import iplib
+from urllib import urlopen
+
+
+e_type,e_values,params = get_from_args()
+
+def timeout_command(command,timeout):	
+  start = datetime.datetime.now()
+  cmd  = command.split(' ')
+  process = subprocess.Popen(cmd , stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  while process.poll() is None:
+	  time.sleep(0.1)
+	  now = datetime.datetime.now()
+	  if (now - start).seconds> timeout:
+		  os.kill(process.pid, signal.SIGKILL)
+		  os.waitpid(-1, os.WNOHANG)
+		  return None
+  return process.stdout.read()
+
+def to2(integer):
+    is2 = True
+    tmp = 2
+    i=0
+    res = 0
+    while is2:
+        if integer == 2**i:
+            res = integer
+            is2 =False
+        elif integer >2**i and integer< 2**(i+1):
+            res = 2**(i+1)
+            is2 =False
+        i+=1
+    return res
+
+def toPower(integer):
+    tmp = integer
+    i=0
+    while tmp >1:
+        tmp=tmp/2
+        i+=1
+    return i
+
+fullIp = iplib.IPv4Address('255.255.255.255')
+
+ip = e_values["value"]
+
+
+lines = timeout_command("whois "+ ip ,5)
+if lines:
+  regex = re.compile('(?:[\d]{1,3}\.){3}(?:[\d]{1,3})\s\S\s(?:[\d]{1,3}\.){3}(?:[\d]{1,3})',re.VERBOSE)
+  val = regex.findall(lines)
+  size = to2(256)
+  dec = toPower(size)
+  adress = {}
+  adress2 = {}
+
+     
+  if len(val) > 0:
+    adressGroup = val[len(val)-1].split(' - ')
+
+    ipStart = iplib.IPv4Address(adressGroup[0])
+    ipEnd = iplib.IPv4Address(adressGroup[1])
+      
+    size = to2(ipEnd._sub(ipStart))
+    dec = toPower(size)
+
+    cidr = iplib.CIDR(ipStart,iplib.IPv4Address(int(fullIp.get_dec())>>dec<<dec,iplib.IP_DEC))     
+    ciNb = iplib.IPv4Address(cidr.get_netmask()).get_dec()  
+
+    val = {}
+    val["value"] = unicode(cidr.get_ip().get()+'/'+str(iplib.VALID_NETMASKS.values().index(int(ciNb))), 'utf-8')
+    write_result("ip-block", val) 
+    sys.stdout.flush()
+
+

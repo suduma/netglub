@@ -1,0 +1,10 @@
+<?xml version='1.0'?>
+<!DOCTYPE EntitySchema>
+<entity name="ip-block" longName="Ip Subnetwork" color="#ffd700" pngImage="image.png" svgImage="image.svg"><!-- Format color : #RRGGBB where R,G and B are hexa digits -->
+  <description>subnetwork</description>
+  <fieldList>
+    <field name="value" longName="IP subnetwork" description="subnetwork" default="192.168.10.0/24" level="default" format="string" optional="false" ioMode="input">
+      <string regex=".*"/>
+    </field>
+  </fieldList>
+</entity> 

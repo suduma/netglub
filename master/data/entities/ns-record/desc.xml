@@ -1,0 +1,10 @@
+<?xml version='1.0'?>
+<!DOCTYPE EntitySchema>
+<entity name="ns-record" longName="Name Server Record" color="#008000" pngImage="image.png" svgImage="image.svg" parent="dns-name"><!-- Format color : #RRGGBB where R,G and B are hexa digits -->
+  <description>name server record</description>
+  <fieldList>
+    <field name="value" longName="Name server record" description="ns-record" default="" level="default" format="string" optional="false" ioMode="input">
+      <string regex=".*"/>
+    </field>
+  </fieldList>
+</entity>

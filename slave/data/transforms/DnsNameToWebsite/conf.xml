@@ -1,0 +1,17 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="DnsNameToWebsite" longName="To Website [Dump]" type="generic" >
+  <description>get website from dns name</description>
+  <parameters>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="dns-name" />
+  </input>
+  <output>
+    <entity type="website" />
+  </output>
+</transform>

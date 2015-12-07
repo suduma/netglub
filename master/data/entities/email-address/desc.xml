@@ -1,0 +1,14 @@
+<?xml version='1.0'?>
+<!DOCTYPE EntitySchema>
+<entity name="email-address" longName="Email Address" color="#f0e68c" pngImage="image.png" svgImage="image.svg"><!-- Format color : #RRGGBB where R,G and B are hexa digits -->
+  <description>address email</description>
+  <fieldList>
+    <field name="value" longName="Email adress" description="address email" default="diateam@diateam.net" level="default" format="string" optional="false" ioMode="input">
+      <string regex="[a-zA-Z0-9\.\-_]*@[a-zA-Z0-9\.\-_]*"/>
+    </field>
+    <field name="verified" longName="verified" description="address email" default="false" optional="true" level="default" format="bool" ioMode="output">
+      <bool label="true" value="true"/>
+      <bool label="false" value="false"/>
+    </field>
+  </fieldList>
+</entity>

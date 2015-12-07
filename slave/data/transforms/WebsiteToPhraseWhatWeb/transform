@@ -1,0 +1,77 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import re, urllib, sys, time, urllib2, os
+from generic_transform import * 
+   
+e_type,e_values,params = get_from_args()
+
+site = e_values["value"]
+
+regexMap = re.compile("(.*?)\[(.*?)\].*?",re.VERBOSE)
+
+
+pluginList = []
+pluginLines = os.popen("./../common/whatweb/whatweb -l").readlines()
+begin = False
+for line in pluginLines:
+  if line.startswith("------"):
+    begin = True
+  elif line.startswith("\n"):
+    begin = False
+  elif begin:
+    t = line.split(',')[0]
+    if t != "PHPError" and t != "MetaGenerator" and t != "Cookies" and t != "HTTPServer" \
+        and t != "MD5" and t != "Title" and t != "UncommonHeaders" \
+        and t != "Google-Analytics" and t != "Div-Span-Structure" \
+        and t != "Footer-Hash" and t != "Header-Hash" and t != "Mailto" and t != "RedirectLocation":
+      pluginList.append(t)
+
+def customSplit(string,char):
+  result = []
+  part = ""
+  inValue = 0
+  for c in string:
+    if c == char and inValue == 0:
+      result.append(part.strip())
+      part=""
+    elif c == "[":
+      inValue += 1
+    elif c == "]":
+      inValue -= 1
+    if c!= char or inValue >0:
+      part += c
+  return result
+
+def parseResultToMap(resultLines):
+  mapResult={}
+  mainLines = customSplit(resultLines.split(']',1)[1],',')
+  
+  for line in mainLines:
+    t = regexMap.findall(line)
+    if len(t) > 0:
+      if len(t[0]) >1:
+        mapResult[t[0][0]] = t[0][1]
+      elif len(t[0]) > 0:
+        mapResult[t[0]] = ""
+    else :
+      mapResult[line] = ""
+  return mapResult
+
+lines = unicode(os.popen("./../common/whatweb/whatweb --color=never   %s"%site).read(), 'cp850')
+currentMap = parseResultToMap(lines)
+
+for plugin in pluginList :
+  if plugin in currentMap:
+    val = {}
+    res = plugin
+    if res == "X-Powered-By":
+      res = currentMap[plugin]
+    elif currentMap[plugin]:
+      res += '['+currentMap[plugin]+']'
+    val["value"] = res 
+    write_result("phrase", val)
+    sys.stdout.flush()
+
+
+

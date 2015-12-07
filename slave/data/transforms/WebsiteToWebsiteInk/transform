@@ -1,0 +1,65 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import re, urllib, sys, time, urllib2, os, simplejson
+from generic_transform import * 
+   
+e_type,e_values,params = get_from_args()
+
+NbResult = 20
+if "NbResult" in params:
+  NbResult = int(params["NbResult"])
+  if NbResult > 100 :
+    NbResult = 100
+  elif NbResult < 1:
+    NbResult = 1
+
+TimeOut = 5
+if "TimeOut" in params:
+  TimeOut = int(params["TimeOut"])
+  if TimeOut > 30 :
+    TimeOut = 30
+  elif TimeOut < 1:
+    TimeOut = 1
+
+value =e_values["value"]
+search = value
+regexW = re.compile('\w{2,6}://(.*?)/',re.VERBOSE)
+
+regexU = re.compile("(\w{2,6}://.*?)/.*?",re.VERBOSE)
+
+if not value.endswith('/'):
+  value = value +'/'
+
+site = regexW.search(value)
+if site:
+    search = site.group(1)
+
+
+resultSite =[]
+resultSite.append(value[0:(len(value)-1)])
+start = time.time()
+index =0
+while len(resultSite) < NbResult  and time.time()-start < TimeOut:
+  try:
+    query = urllib.urlencode({'q' : "link:%s"%search, 'rsz' : 'large', 'start': "%d"%index})
+    index = index + 8
+    url = 'http://ajax.googleapis.com/ajax/services/search/web?v=1.0&%s' \
+      % (query)
+    search_results = urllib.urlopen(url)
+    json = simplejson.loads(search_results.read())
+    results = json['responseData']['results']
+    for i in results:
+      backlink = regexU.findall(i['url'])[0]
+      if backlink not in resultSite:
+        resultSite.append(backlink)
+        val = {}
+        val["value"] = backlink
+        write_result("website", val)
+        sys.stdout.flush()
+  except:
+    pass
+
+
+
+

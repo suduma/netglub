@@ -1,0 +1,10 @@
+<?xml version='1.0'?>
+<!DOCTYPE EntitySchema>
+<entity name="mx-record" longName="Message Exchanger record" color="#800080" pngImage="image.png" svgImage="image.svg" parent="dns-name"><!-- Format color : #RRGGBB where R,G and B are hexa digits -->
+  <description>message exchanger record</description>
+  <fieldList>
+    <field name="value" longName="Message Exchanger Record" description="mx-record" default="" level="default" format="string" ioMode="input" parent="dns-name">
+      <string regex=".*"/>
+    </field>
+  </fieldList>
+</entity>

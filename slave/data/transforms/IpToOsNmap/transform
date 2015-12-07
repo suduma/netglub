@@ -1,0 +1,52 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import sys, re, subprocess, select
+from generic_transform import * 
+
+sys.path.append('../common/iplib/')
+
+import iplib
+
+e_type,e_values,params = get_from_args()
+
+
+t_param = "-T 5"
+if "aggressiveness" in params:
+  t_param = "-T " + params["aggressiveness"]
+
+host = e_values["value"]
+
+
+process = subprocess.Popen("sudo nmap -O -P0 --osscan-guess %s %s " % (t_param,host),
+                             shell=True, stdout=subprocess.PIPE, bufsize=1, 
+                             universal_newlines=True, close_fds=True)
+
+
+
+regex = re.compile('.*?:\s(.*)\(?\,?',re.VERBOSE)
+regexIP = re.compile('Interesting\sports\son\s(.*?):',re.VERBOSE)
+
+
+while not process.poll():
+    ready = select.select([process.stdout],[],[], .5)
+    if ready != ([],[],[]):
+        line = ready[0][0].readline()
+        if line.startswith("Nmap done") or line.startswith("OS detection"):
+            break
+        elif line.startswith("Interesting ports on"):
+            h = regexIP.search(line)
+            if h:
+                host = h.group(1)
+        elif line.startswith('OS details') or line.startswith('Aggressive OS guesses'):             
+          m = regex.search(line)
+          if m:
+            val = {}
+            val["value"] = unicode(m.group(1).split(',')[0].split(' or ')[0].split('(')[0], 'utf-8')
+            val["host"] = unicode(host, 'utf-8')
+            write_result("operating-system", val)
+            sys.stdout.flush()
+
+
+
+

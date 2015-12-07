@@ -1,0 +1,13 @@
+<?xml version='1.0'?>
+<!DOCTYPE EntitySchema>
+<entity name="website" longName="Website" color="#0000ff" pngImage="image.png" svgImage="image.svg"><!-- Format color : #RRGGBB where R,G and B are hexa digits -->
+  <description>website</description>
+  <fieldList>
+    <field name="value" longName="Website" description="website" default="" level="default" format="string" ioMode="input">
+      <string regex=".*"/>
+    </field>
+    <field name="server" longName="Server type" description="server" default="" optional="false" level="advanced" format="string" ioMode="output">
+      <string regex=".*"/>
+    </field>
+  </fieldList>
+</entity>

@@ -1,0 +1,26 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import os, re, sys, select, subprocess
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+ip = e_values["value"]
+
+regex = re.compile('AS(\d{2,6})',re.VERBOSE)
+
+lines = os.popen('whois %s'%ip).read()
+
+asNumbers = regex.findall(lines)
+
+results =[]
+
+for i in asNumbers:
+  if i not in results:
+    results.append(i)
+    val = {}
+    val["value"] = i
+    write_result("autonomous-system", val)
+    sys.stdout.flush()
+

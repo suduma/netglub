@@ -1,0 +1,17 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="IpToIpBlock" longName="To IpBlock [Whois]" type="generic" >
+  <description>Transforms an IP to its IP Block by Whois</description>
+  <parameters>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="ip-address" />
+    </input>
+  <output>
+    <entity type="ip-block" />
+  </output>
+</transform>

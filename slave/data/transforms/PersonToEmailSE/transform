@@ -1,0 +1,85 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import re, urllib, sys, time, urllib2, os, simplejson
+from generic_transform import * 
+   
+e_type,e_values,params = get_from_args()
+
+NbResult = 20
+if "NbResult" in params:
+  NbResult = int(params["NbResult"])
+  if NbResult > 100 :
+    NbResult = 100
+  elif NbResult < 1:
+    NbResult = 1
+
+TimeOut = 20
+if "TimeOut" in params:
+  TimeOut = int(params["TimeOut"])
+  if TimeOut > 30 :
+    TimeOut = 30
+  elif TimeOut < 1:
+    TimeOut = 1
+
+values = e_values["value"].replace('-',' ').split(' ')
+#print len(values)
+searchList =[]
+for name in values:
+  searchList.append(name)
+  for remainingName in values:
+    if remainingName != name:
+      searchList.append("%s.%s"%(name,remainingName))
+      searchList.append("%s.%s"%(name[0],remainingName))
+      searchList.append("%s.%s"%(name,remainingName[0]))
+      searchList.append("%s%s"%(name,remainingName))
+      searchList.append("%s%s"%(name[0],remainingName))
+      searchList.append("%s%s"%(name,remainingName[0]))
+
+
+
+regex = re.compile("(([\w\d\.]*?)@[\w\d\.\-]*?\.\w{2,5})",re.VERBOSE)
+
+
+search = e_values["value"]
+if "search-word" in e_values:
+  search = "%s %s"%(search,e_values["search-word"])
+
+
+resultEmail =[]
+start = time.time()
+index =0
+while len(resultEmail) < NbResult  and time.time()-start < TimeOut:
+  try:
+    query = urllib.urlencode({'q' : search, 'rsz' : 'large', 'start': "%d"%index})
+    index = index + 8
+    url = 'http://ajax.googleapis.com/ajax/services/search/web?v=1.0&%s' \
+      % (query)
+    search_results = urllib.urlopen(url)
+    json = simplejson.loads(search_results.read())
+    results = json['responseData']['results']
+    for i in results:
+      results_web = i['url']
+      print i['url']
+      request_web = urllib2.Request(results_web)
+      request_web.add_header('User-Agent','Mozilla/4.0 (compatible; MSIE 5.5; Windows NT 5.0)')
+      opener_web = urllib2.build_opener()
+      text = opener_web.open(request_web).read()
+      emails = regex.findall(text)
+      print emails
+      if len(emails) > 0:
+        for email in emails:
+          if unicode(email[1], 'utf-8') in searchList and email[1] != "":
+            if email[0] not in resultEmail:
+              val = {}
+              val["value"] = unicode(email[0], 'utf-8')
+              val["verified"] = unicode("False", 'utf-8')
+              write_result("email-address", val)
+              sys.stdout.flush()
+              resultEmail.append(email[0])
+    
+  except:
+    pass
+
+
+

@@ -1,0 +1,13 @@
+<?xml version='1.0'?>
+<!DOCTYPE EntitySchema>
+<entity name="phone-number" longName="Phone Number" color="#ff8c00" pngImage="image.png" svgImage="image.svg"><!-- Format color : #RRGGBB where R,G and B are hexa digits -->
+  <description>phone number</description>
+  <fieldList>
+    <field name="value" longName="phone number" description="phone-number" default="" level="default" format="string" ioMode="input">
+      <string regex=".*"/>
+    </field>
+    <field name="country" longName="it's country" description="country" default="" optional="true" level="advanced" format="string" ioMode="input">
+      <string regex=".*"/>
+    </field>
+  </fieldList>
+</entity>

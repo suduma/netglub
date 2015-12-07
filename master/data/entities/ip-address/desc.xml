@@ -1,0 +1,10 @@
+<?xml version='1.0'?>
+<!DOCTYPE EntitySchema>
+<entity name="ip-address" longName="Ip Address" color="#b72222" pngImage="image.png" svgImage="image.svg"><!-- Format color : #RRGGBB where R,G and B are hexa digits -->
+  <description>address Ip</description>
+  <fieldList>
+    <field name="value" longName="IP address" description="IP address" default="127.0.0.1" level="default" format="string" optional="false" ioMode="input">
+      <string regex="([0-9]{1,3}\.){3}[0-9]{1,3}"/>
+    </field>
+  </fieldList>
+</entity>

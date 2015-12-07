@@ -1,0 +1,17 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="IpToDnsName" longName="To DNS name [host]" type="generic" >
+  <description>perform a DNS lookup and returns IPs DNS name</description>
+  <parameters>
+    <param name="server" longName="Server" description="The Domain Name Server t
+o query" default="" optional="true" level="default" format="string">
+      <string regex=".*"/>
+    </param>
+  </parameters>
+  <input>
+    <entity type="ip-address"/>
+  </input>
+  <output>
+    <entity type="dns-name" />
+  </output>
+</transform>

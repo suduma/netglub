@@ -1,0 +1,27 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import sys, re, urllib, os
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+server = ''
+if 'server' in params :
+  if params['server'] <> '' :
+    server = ''+params['server']
+
+mxEntry = re.compile('\sdomain\sname\spointer\s(.*?)\.\s')
+ip = e_values["value"]
+raw = os.popen('host '+ip+' '+server)
+lines = raw.readlines()
+for line in lines :
+  rgv = mxEntry.search(line)
+  if rgv :
+    val = {}
+    val['value'] = unicode(rgv.group(1),'utf-8')
+    if val['value'] <> '' :
+      write_result('dns-name',val)
+      sys.stdout.flush()
+
+

@@ -1,0 +1,89 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import re, sys, os, select, subprocess
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+timeout=''
+line=''
+begin = False
+findMx = False
+findNs = False
+
+if "timeout" in params:
+  timeout = '-timeout=%s '% params["timeout"]
+
+site = e_values["value"]
+
+regexDNS = re.compile('\s*(.*?)\.\s*?\d*?\s*?IN\s(CNAME)|(A)',re.VERBOSE)
+regexNS = re.compile('\s*(.*?)\.\s*?\d*?\s*?IN\sA',re.VERBOSE)
+
+process = subprocess.Popen("perl ../common/dnsenum/dnsenum.pl --noreverse " + timeout + site,
+                             shell=True, stdout=subprocess.PIPE, bufsize=1, 
+                             universal_newlines=True, close_fds=True)
+
+result = []
+
+while process.poll() == None or process.poll() == 0:
+  ready = select.select([process.stdout],[],[], .5)
+  if ready != ([],[],[]):
+    line = ready[0][0].readline()
+
+  if line.startswith("Name servers:"):
+    findNs = True
+  elif line.startswith('MX record:') and findNs :
+    findNs = False
+  if findNs:
+    m = regexNS.findall(line)
+    if len(m)>0:
+      res = m[0]
+      if res not in result and res != None:
+        result.append(res)
+        val = {}
+        val["value"] = unicode(res, 'utf-8')
+        write_result("ns-record", val)
+        sys.stdout.flush()
+
+  if line.startswith("MX record:"):
+    findMx = True
+  elif line.startswith('Trying Zonetransfers:') and findMx :
+    findMx = False
+  if findMx:
+    m = regexNS.search(line)
+    if m>0:
+      res = m.group(1)
+      if res not in result and res != None:
+        result.append(res)
+        val = {}
+        val["value"] = unicode(res, 'utf-8')
+        write_result("mx-record", val)
+        sys.stdout.flush()
+
+  if line.startswith("Trying Zonetransfers:"):
+    begin = True
+  elif line.startswith('brute force') and begin :
+    begin = False
+    break
+  if begin:
+    m = regexDNS.search(line)
+    if m>0:
+      res = m.group(1)
+      if res not in result and res != None:
+        result.append(res)
+        val = {}
+        val["value"] = unicode(res, 'utf-8')
+        write_result("dns-name", val)
+        sys.stdout.flush()
+
+
+if process.returncode != 0:
+  write_error("dnsenum failed")
+  sys.exit(1)
+
+
+
+
+
+

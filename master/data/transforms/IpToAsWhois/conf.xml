@@ -1,0 +1,13 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="IpToAsWhois" longName="To AS Number [Whois]" type="generic" >
+  <description>Return the as number of an Ip</description>
+  <parameters>
+  </parameters>
+  <input>
+    <entity type="ip-address" />
+  </input>
+  <output>
+    <entity type="autonomous-system" />
+  </output>
+</transform>

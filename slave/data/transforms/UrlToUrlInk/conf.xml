@@ -1,0 +1,23 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="UrlToUrlInk" longName="To Url [Backlinks]" type="generic" >
+  <description>find the urls baclinks</description>
+  <parameters>
+    <param name="timeout" longName="Time Out" description="the time of the transform" default="4" optional="true" level="advanced" format="int">
+      <int min="1" max="100"/>
+    </param>
+    <param name="TimeOut" longName="Time Out" description="time out" default="5" optional="true" level="advanced" format="int">
+      <int min="1"/>
+    </param>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="url" />
+  </input>
+  <output>
+    <entity type="url" />
+  </output>
+</transform>

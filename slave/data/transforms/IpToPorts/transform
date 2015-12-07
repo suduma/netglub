@@ -1,0 +1,51 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import os, re, sys, select, subprocess
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+ip = e_values["value"]
+aggressiveness = '-T 5 '
+options = {'normal':'-sU -sS ','TCP connect scan':'-sT ','SCTP INIT scan':'-sY ','TCP NULL scan':'-sN ','TCP FIN scan':'-sF ',
+           'TCP Xmas scan':'-sX','TCP Window scan':'-sW '}
+
+    
+regex = re.compile('(\d*)/(\w*)\s*(.*?)\s(\w+)\s?\n',re.VERBOSE)
+
+option = 'normal'
+aggressiveness = "-T 5 "
+if "aggressiveness" in params:
+  aggressiveness = "-T " + params["aggressiveness"]+ " "
+if 'option' in params:
+  option = options[params["option"]]
+
+process = subprocess.Popen("sudo nmap " + option + aggressiveness + ip,
+                             shell=True, stdout=subprocess.PIPE, bufsize=1, 
+                             universal_newlines=True, close_fds=True)
+
+nmapdone = 0
+while process.poll() == None or process.poll() == 0:
+  ready = select.select([process.stdout],[],[], .5)
+  if ready != ([],[],[]):
+    line = ready[0][0].readline()
+    if line.startswith("Nmap done"):
+      nmapdone = 1
+      break
+    
+    m = re.findall(regex,line)
+    if len(m)>0:
+      val = {}
+      val["host"] = ip
+      val["value"] = unicode(m[0][0], 'utf-8')
+      val["protocol"] = unicode(m[0][1], 'utf-8')
+      val["filter"] = unicode(m[0][2], 'utf-8')
+      if val["value"] <> '' and val["protocol"] <> '' and val["filter"] <> '':
+         write_result("port", val)
+         sys.stdout.flush()
+
+if process.returncode != 0 and nmapdone == 0:
+  write_error("Nmap failed")
+  sys.exit(1)
+

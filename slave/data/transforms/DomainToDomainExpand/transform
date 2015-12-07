@@ -1,0 +1,96 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import re, urllib, sys, time, urllib2, os
+from generic_transform import * 
+   
+e_type,e_values,params = get_from_args()
+
+
+NbResult = 20
+
+if "NbResult" in params:
+  NbResult = int(params["NbResult"])
+  if NbResult > 100 :
+    NbResult = 100
+  elif NbResult < 1:
+    NbResult = 1
+
+
+TimeOut = 5
+
+if "TimeOut" in params:
+  TimeOut = int(params["TimeOut"])
+  if TimeOut > 30 :
+    TimeOut = 30
+  elif TimeOut < 1:
+    TimeOut = 1
+
+def websiteTodomain(string):
+    site = string
+    try:
+        site = (re.search('\w{2,6}://(.*?)/',site)).group(1)
+    except:
+        pass
+    lines = os.popen("dig "+ site).read()
+    regex = re.compile(';;\sAUTHORITY\sSECTION:\s?\n(.*?)\.\s',re.VERBOSE)
+    result = regex.findall(lines)[0]
+    if len(result)> 1:
+        return(result)
+    else:
+        return ''
+
+
+codehtml=[]
+result=[]
+domain = e_values["value"]
+search = re.search('(.*?)\.[\w\.]{2,6}',domain,re.VERBOSE).group(1)
+
+regexY = re.compile('<a\sclass=\"yschttl\sspt\"\shref=\"(\w{2,6}.{1,3}//.*?/).*?\">',re.VERBOSE)
+regexG = re.compile('<p><a\shref=\"(\w{2,6}://.*?/).*?\">',re.VERBOSE)
+regexB = re.compile('<h3><a\shref=\"(\w{2,6}://.*?/).*?\">',re.VERBOSE)
+page=0
+b = True
+tablang = ['fr','us','nl','uk','ch','de','jp','es']
+
+lang = ''
+google = ['http://www.google.','/search?q=','&hl=en&lr=&ie=UTF-8&start=','&sa=N']
+yahoo = ['http://','.search.yahoo.com/search?p=','&b=']
+bing = ['http://www.bing.com/search?q=','&first=','&cc=']
+
+start = time.time()
+
+while len(result) < NbResult and time.time()-start < TimeOut:
+    for lang in tablang:
+        if not b or time.time()-start > TimeOut:
+            break
+        yahooUrl = [urllib.urlopen(yahoo[0]+lang+yahoo[1]+search+yahoo[2]+str(page*10+1)).read(),regexY]
+        bingUrl = [urllib.urlopen(bing[0]+search+bing[1]+str(page*10+1)+bing[2]+lang).read(),regexB]
+        if lang == 'uk':
+            lang = 'com'
+            
+        results_web = google[0]+lang+google[1]+search+google[2]+str(page*10)+google[3]
+        request_web = urllib2.Request(results_web)
+        request_web.add_header('User-Agent','Mozilla/4.0 (compatible; MSIE 5.5; Windows NT 5.0)')
+        opener_web = urllib2.build_opener()
+        text = opener_web.open(request_web).read()
+        googleUrl = [text,regexG]
+        
+        for url in [googleUrl,yahooUrl,bingUrl]:
+            if not b or time.time()-start > TimeOut:
+                break
+            lines  = url[1].findall(url[0])
+            for line in lines:
+                if len(line)> 0:
+                    res = websiteTodomain(line)
+                    if res.find(search) >-1 and res not in result:
+                        result.append(res)
+                        val = {}
+                        val["value"] = unicode(res, 'utf-8')
+                        write_result("domain-name", val)
+                        sys.stdout.flush()
+                        if len(result) >= NbResult  or time.time()-start > TimeOut:
+                            b=False
+                            break
+    page += 1
+

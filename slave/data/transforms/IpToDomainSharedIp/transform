@@ -1,0 +1,43 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import re, urllib, sys, time,os
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+ip = e_values["value"]
+
+regex = re.compile ("<span\sid=\"dns\d{1,3}\"><a\shref=\"/dns/(.*?)\.html\"\s?>",re.VERBOSE)
+regexD = re.compile(';;\sAUTHORITY\sSECTION:\s?\n(.*?)\.\s+\d+',re.VERBOSE)
+regexE = re.compile('status:\s(.*),\sid:',re.VERBOSE)
+
+try:
+    url = urllib.urlopen('http://www.robtex.com/ip/'+ip+'.html')
+    codehtml = url.read()
+    result = []
+    step=0
+    domains = re.findall(regex,codehtml)
+    length = len(domains)
+
+    for index in range(0,length):
+        progress = float(index)/float(length)
+        if progress >= step :
+            write_progress(progress*100, ' reached')
+            step+=0.20
+        test = os.popen("dig "+domains[index]).read()
+        exist =  re.findall(regexE,test)
+        if exist[0] == 'NOERROR' :
+            trueDom = re.findall(regexD,test)
+            res = trueDom[0]
+            if res not in result:
+                result.append(res)
+                val = {}
+                val["value"] = unicode(res, 'utf-8')
+                write_result("domain-name", val)
+                sys.stdout.flush()
+  
+except:
+    write_error("failed to look in robtex")
+    sys.exit(1)
+

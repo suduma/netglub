@@ -1,0 +1,219 @@
+#!/bin/bash
+
+NETGLUB_BINARY=/usr/local/bin/netglub-master
+
+CONFIG_FILE=/etc/netglub/master.conf
+LOCKFILE=/var/lock/netglub-master_lock
+SUBSYS=/var/lock/netglub-master
+APP_NAME="Netglub master"
+
+DAEMON_RUNNER=/usr/local/bin/netglub-runLoopDaemon
+
+rc_done=' ...done'
+rc_failed=' ...failed'
+# Source function library.
+if [ -r /etc/init.d/functions ]; then
+	source /etc/init.d/functions
+	if [ -r /etc/redhat-release ] || [ -r /etc/centos-release ]; then
+		DISTR=redhat
+	fi
+elif [ -r /etc/rc.status ]; then
+	source /etc/rc.status
+	if [ -r /etc/SuSE-release ]; then
+		DISTR=suse
+	fi
+elif [ -r /etc/debian_version ]; then
+	DISTR=debian
+fi
+
+if [ ! -r $CONFIG_FILE ]; then
+  echo "Le fichier de configuration $CONFIG_FILE n'a pas été trouvé."
+	echo -n "$rc_failed"
+  exit 1
+fi
+
+source $CONFIG_FILE
+
+FULL_COMMAND="$NETGLUB_BINARY -i $IP_ADDRESS -o $SLAVES_PORT -s $TLS_CREDS_DIR\
+ -l $LOG_FILE -p $PID_FILE -e $EVENT_LOG_FILE\
+ -b $DB_TYPE://$DB_USER:$DB_PASSWORD@$DB_HOST/$DB_NAME\
+ -c $CLIENT_PORT -t $SESSION_DURATION -k $CONNECTION_DURATION\
+ -a $TRANSFORMS_PATH -f $ENTITIES_PATH"
+
+RETVAL=0
+cd /
+
+print_success()
+{
+	if [ "$DISTR" = "redhat" ]; then
+		echo_success
+	else
+		echo -n "$rc_done"
+	fi
+	echo
+}
+
+print_failure()
+{
+	echo -n "$1"
+	if [ "$DISTR" = "redhat" ]; then
+		failure $"$1"
+	else
+		echo -n "$rc_failed"
+	fi
+	echo
+}
+
+# Calls either print_success or print_failure, depending on $?
+# Optional argument $1 -- an error string passed to print_failure.
+print_result()
+{
+	if [ $? -eq 0 ] ; then
+		print_success
+	else
+		print_failure "$1"
+	fi
+}
+
+__echo()
+{
+	if [ "$DISTR" = "redhat" ]; then
+		echo -n $"$1"
+	else
+		echo -n "$1"
+	fi
+}
+
+is_running()
+{
+  nb=$(ps aux |grep $DAEMON_RUNNER |grep "$APP_NAME" |grep -v grep |wc -l)
+  #echo "running = $nb"
+
+  #nb=$($NETGLUB_BINARY status |grep "not running" |grep -v grep|wc -l)
+  if [[ $nb == 0 ]]
+  then
+    return 1
+  fi
+  return 0
+}
+
+status()
+{
+  res=$(is_running)
+  #echo $res
+  if is_running
+  then
+ 		echo "$APP_NAME is running."
+		return 0
+	else
+		echo "$APP_NAME is stopped."
+		return 0
+	fi
+}
+
+lockfile()
+{
+	local TEMPFILE="${1}.$$"
+	local LOCKFILE="${1}"
+
+	trap -- "rm -f ${LOCKFILE} ${TEMPFILE}" EXIT
+
+	echo $$ > ${TEMPFILE} 2> /dev/null || {
+		echo "Can't write to ${TEMPFILE}"
+	}
+	ln ${TEMPFILE} ${LOCKFILE} >/dev/null 2>&1 && {
+		rm -f ${TEMPFILE};
+		return 0;
+	}
+	kill -0 `cat $LOCKFILE` >/dev/null 2>&1 && {
+		return 1;
+	}
+	ln ${TEMPFILE} ${LOCKFILE} >/dev/null 2>&1 && {
+		rm -f ${TEMPFILE};
+		return 0;
+	}
+	rm -f ${LOCKFILE}
+	echo $$ > ${LOCKFILE}
+	return 0
+}
+
+start()
+{
+
+	if ! lockfile $LOCKFILE; then
+		__echo "$APP_NAME is locked"
+		print_failure
+		return 1
+	fi
+	if is_running; then
+		__echo "$APP_NAME already running"
+		print_failure
+		return 1
+	fi
+
+	__echo "Starting $APP_NAME: "
+	
+  date=$(date +"%x %X")
+  echo "-------- $date : start ---------" >> $LOG_FILE
+  	
+  $DAEMON_RUNNER "$FULL_COMMAND" "$APP_NAME" >> $LOG_FILE 2>&1 &
+
+	print_success "Starting $APP_NAME"
+	rm -f $LOCKFILE
+	touch $SUBSYS
+}
+
+stop()
+{
+	local mod
+
+	if ! is_running; then
+		__echo "$APP_NAME is not running"
+		print_failure
+		return 0
+	fi
+	
+	if ! lockfile $LOCKFILE; then
+		__echo "$APP_NAME is locked"
+		print_failure
+		RETVAL=1
+		return 1
+	fi
+
+
+	date=$(date +"%x %X")
+  echo "-------- $date : stop ---------" >> $LOG_FILE
+	
+	__echo "Stopping $APP_NAME: "
+
+  PID=$(ps aux |grep $NETGLUB_BINARY|grep "$APP_NAME" |grep -v grep| awk '// { print $2}')
+  kill $PID
+  $NETGLUB_BINARY stop >> $LOG_FILE 2>&1
+  
+	rm -f $LOCKFILE
+	rm -f $SUBSYS
+	print_success
+}
+
+# See how we were called.
+case "$1" in
+  start)
+	start
+	;;
+  stop)
+	stop
+	;;
+  restart|force-reload)
+	stop
+	start
+	;;
+  status)
+	status
+	RETVAL=$?
+	;;
+  *)
+	echo "Usage: $0 {start|stop|status|restart|force-reload}"
+	exit 1
+esac
+
+exit $RETVAL

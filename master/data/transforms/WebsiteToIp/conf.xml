@@ -1,0 +1,18 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="WebsiteToIp" longName="To Ip Adress [Dig]" type="generic" >
+  <description>Transforms a website to an IP using dig</description>
+  <parameters>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="website" />
+  </input>
+  <output>
+    <entity type="ip-address" />
+    <entity type="dns-name" />
+  </output>
+</transform>

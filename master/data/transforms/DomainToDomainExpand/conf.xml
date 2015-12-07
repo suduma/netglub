@@ -1,0 +1,23 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="DomainToDomainExpand" longName="To Domain [Expand, SE]" type="generic" >
+  <description>get the domains that have nearly the same spealing as the input domain</description>
+  <parameters>
+    <param name="NbResult" longName="Number or results desired" description="number of result asked" default="20" optional="true" level="default" format="int">
+      <int min="1" max="100"/>
+    </param>
+    <param name="TimeOut" longName="Time Out (prioritary)" description="time out" default="5" optional="true" level="advanced" format="int">
+      <int min="1"/>
+    </param>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="domain-name" />
+  </input>
+  <output>
+    <entity type="domain-name" />
+  </output>
+</transform>

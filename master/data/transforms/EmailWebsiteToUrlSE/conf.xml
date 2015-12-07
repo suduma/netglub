@@ -1,0 +1,24 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="EmailWebsiteToUrlSE" longName="To Url [SE]" type="generic" >
+  <description>get URLs related to an email or a Website from se</description>
+  <parameters>
+    <param name="NbResult" longName="Number or results desired" description="number of result asked" default="20" optional="true" level="default" format="int">
+      <int min="1" max="100"/>
+    </param>
+    <param name="TimeOut" longName="Time Out (prioritary)" description="time out" default="5" optional="true" level="default" format="int">
+      <int min="1"/>
+    </param>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="email-address" />
+    <entity type="website" />
+  </input>
+  <output>
+    <entity type="url" />
+  </output>
+</transform>

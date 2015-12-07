@@ -1,0 +1,22 @@
+<?xml version='1.0'?>
+<!DOCTYPE TransformSchema>
+<transform name="DomainToDnsNameZN" longName="To Dns Name [Zone Transfert]" type="generic" >
+  <description>get dns names from domain by zone transfert</description>
+  <parameters>
+    <param name="timeout" longName="Time Out" description="The DNS query timeout (seconds)" default="5" optional="true" level="default" format="int">
+      <int min="1"/>
+    </param>
+  </parameters>
+  <config>
+    <value name="need_root">true</value>
+    <value name="input_as_args">true</value> <!-- otherwise on stdin -->
+  </config>
+  <input>
+    <entity type="domain-name" />
+  </input>
+  <output>
+    <entity type="dns-name" />
+    <entity type="mx-record" />
+    <entity type="ns-record" />
+  </output>
+</transform>

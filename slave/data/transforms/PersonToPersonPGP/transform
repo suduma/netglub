@@ -1,0 +1,49 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import urllib, re, sys
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+search = e_values["value"].replace(' ','+')
+
+if 'search-world' in e_values:
+    search=search+'+'+e_values['search-world']
+
+if 'nickname' in e_values:
+    search=search+'+'+e_values['nickname']
+
+regexB =re.compile('<hr><pre>.*?</a>.*?>(.*?)</a>(.*?)</pre>',re.VERBOSE|re.DOTALL)
+regexN = re.compile('\s*(.*?)\s&lt;',re.VERBOSE)
+url = urllib.urlopen('http://pgp.mit.edu:11371/pks/lookup?search='+search)
+codehtml = url.read()
+blocks = regexB.findall(codehtml)
+result=[search]
+for block in blocks:
+  val ={}
+  ps=''
+  tmp=block[0].split(' &lt;')[0].split('(')[0].strip()
+  if tmp not in result:
+    result.append(tmp)
+    res=[]
+    try :
+      val['value'] = unicode(tmp, 'utf-8')
+      val['name'] = unicode(tmp.split(' ')[0], 'utf-8')
+      t= tmp.split(' ',1)
+      if len(t)>1:
+        val['surname']= unicode(t[1], 'utf-8')
+      lines = regexN.findall(block[1])
+      for line in lines:
+        r = re.search('[^a-zA-Z0-9\s.\'éèê]',line,re.VERBOSE)
+        if not r:
+          if ps.find(line)<0 and line <> tmp:
+            ps+=line+'+'
+      if ps <> '':
+        val['nicknames']= unicode(ps.strip('+'), 'utf-8')
+
+      write_result("person", val)
+      sys.stdout.flush()
+    except:
+      pass
+

@@ -1,0 +1,36 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import os, re, sys
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+site = e_values["value"]
+
+
+if e_type == "website":
+    try:
+        if not site.endswith("/"):
+            site += "/"
+        site = (re.search('.*?://(.*?)/',site)).group(1)
+    except:
+        pass
+
+try:
+    lines = os.popen("dig "+ site).read()
+except:
+    write_error("Dig \""+ site +"\" failed")
+
+
+regex = re.compile(';;\sAUTHORITY\sSECTION:\s?\n(.*?)\.\s',re.VERBOSE)
+
+result = regex.search(lines)
+if result:
+    val = {}
+    val["value"] = unicode(result.group(1), 'utf-8')
+    write_result("domain-name", val)
+    sys.stdout.flush()
+
+
+

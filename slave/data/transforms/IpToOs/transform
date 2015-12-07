@@ -1,0 +1,38 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import select, subprocess, sys, re
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+t_param = ""
+if "aggressiveness" in params:
+  t_param = "-T " + params["aggressiveness"]
+
+process = subprocess.Popen("sudo nmap -n -O -oG - %s '%s' 2>/dev/null" % (t_param,e_values["value"]),
+                             shell=True, stdout=subprocess.PIPE, bufsize=1, 
+                             universal_newlines=True, close_fds=True)
+
+regex = re.compile(r'Host:\s+([\d.]+)\s+.+\s+OS:\s+(.+)\s+Seq Index:')
+
+while process.poll() == None:
+  ready = select.select([process.stdout],[],[], .5)
+  if ready != ([],[],[]):
+    line = ready[0][0].readline()
+    if line.startswith("# Nmap done"):
+      process.kill()
+      sys.exit(0)
+    
+    m = regex.search(line)
+    if m:
+      val = {}
+      val["value"] = m.group(2)
+      val["host"] = m.group(1)
+      write_result("operating-system", val)
+      sys.stdout.flush()
+
+if process.returncode != 0:
+  write_error("Nmap failed")
+  sys.exit(1)
+

@@ -1,0 +1,69 @@
+#!/usr/bin/python
+# coding=utf-8
+
+import select, sys, re, os
+from generic_transform import * 
+
+e_type,e_values,params = get_from_args()
+
+t_param = ""
+if "speed" in params:
+  t_param = params["speed"]
+
+
+tld = ['.biz', '.ch', '.com', '.co.uk', '.cz', '.es',
+           '.fm', '.fr', '.info', '.it', '.lu', '.me',
+           '.mobi', '.net', '.nl', '.org', '.pro', '.pt', '.ru',
+           '.se', '.tel', '.tv', '.name', '.aero','.com.hk ',
+           '.us', '.cc', '.bz', '.hn', '.vc', '.ht', '.gs',
+           '.be', '.eu', '.ch', '.li', '.org.uk', '.nu', '.it',
+           '.de', '.at', '.cz', '.pl', '.im', '.cat', '.nl',
+           '.me.uk', '.se', '.tv', '.asia', '.in', '.cn', '.tw','.jp',
+           '.mn', '.sb', '.tl', '.cx', '.am', '.fm', '.hk', '.re', '.sc', '.mu']
+
+less=[]
+s=''
+if t_param == "dictionary":
+    fil = open('dico.txt','r')
+    less = fil.readlines()
+    fil.close()
+    tld=[]
+    for s in less:
+        tld.append(s[:len(s)-1])
+    write_progress(0, ' reading file done')
+
+elif t_param == 'all':
+    fil = open('dico.txt','r')
+    less = fil.readlines()
+    fil.close()
+    for s in less:
+        tld.append(s[:len(s)-1])
+    write_progress(0, ' reading file done')
+
+
+begining = e_values["value"].split('.')[0]
+
+step = 0
+length = len(tld)
+result = []
+
+for i in range(0,length):
+    if (float(i)/float(length) > step):
+        write_progress(step*100, ' reached')
+        sys.stdout.flush()
+        step+=0.20
+    res = begining + tld[i]
+    if res not in result :
+        test = os.popen("nslookup %s" % res)
+        lines = test.read()
+        
+
+        if "server can't find" not in lines:
+            result.append(res)
+            val = {}
+            val["value"] = res
+            write_result("domain-name", val)
+            sys.stdout.flush()
+
+
+
