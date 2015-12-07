@@ -42,17 +42,17 @@ bool SuperNode::hNoParentsAndNoChilds(const SuperNode* spn) const
 // Connected Component
 
 ConnectedComponent::ConnectedComponent()
-{    
+{
     _gvC = gvContext();
     ///*
     QString str = "mygraph" + QString::number(qrand());
     std::string s = str.toStdString();
-    _gvG = agopen((char*)s.c_str(),AGDIGRAPH);//*/
+    _gvG = agopen((char*)s.c_str(),Agdirected,NULL);//*/
     //_gvG = agopen((char*)"mygraph",AGDIGRAPH);
 }
 
 ConnectedComponent::~ConnectedComponent()
-{    
+{
     gvFreeLayout(_gvC,_gvG);
     agclose(_gvG);
     gvFreeContext(_gvC);
@@ -223,7 +223,7 @@ void ConnectedComponent::createAgnodes(AbstractLayout::ViewMod viewMod)
     {
         SuperNode * pSuperNode = itrSuperNodeList.next();
         QString id = QString("n").append(QString::number(pSuperNode->_nodeSet.values().first()->getId()));
-        Agnode_t * gvnode = agnode(_gvG,id.toLatin1().data());
+        Agnode_t * gvnode = agnode(_gvG,id.toLatin1().data(),true);
         pSuperNode->_gvnode = gvnode;
 
         int nbNode = pSuperNode->_nodeSet.size();
@@ -282,7 +282,7 @@ void ConnectedComponent::createAgedges()
             if(!alreadyCreated.contains(pEdge))
             {
                 alreadyCreated.insert(pEdge);
-                agedge(_gvG,_nodeMap.value(pEdge->getTailNode())->_gvnode,_nodeMap.value(pEdge->getHeadNode())->_gvnode);
+                agedge(_gvG,_nodeMap.value(pEdge->getTailNode())->_gvnode,_nodeMap.value(pEdge->getHeadNode())->_gvnode,NULL,true);
             }
         }
     }
@@ -403,7 +403,7 @@ QSet<ConnectedComponent*> AbstractLayout::retrieveConnectedComponents(QList<Node
 void AbstractLayout::repack(QSet<ConnectedComponent*>& connectedComponents)
 {
     GVC_t * gvC = gvContext();
-    Agraph_t * gvG = agopen((char*)"mygraph",AGDIGRAPH);
+    Agraph_t * gvG = agopen((char*)"mygraph",Agdirected,NULL);
 
     QSetIterator<ConnectedComponent*> itrConnectedComponents(connectedComponents);
     while(itrConnectedComponents.hasNext())
@@ -411,7 +411,7 @@ void AbstractLayout::repack(QSet<ConnectedComponent*>& connectedComponents)
         ConnectedComponent * pConnectedComponent = itrConnectedComponents.next();
         QRectF brect = pConnectedComponent->_boundingBox;
         QString id = QString("c").append(QString::number(pConnectedComponent->_nodeList.first()->getId()));
-        Agnode_t * gvnode = pConnectedComponent->_gvnode = agnode(gvG,(char*)id.toLatin1().data());
+        Agnode_t * gvnode = pConnectedComponent->_gvnode = agnode(gvG,(char*)id.toLatin1().data(),true);
         float width = brect.width()/72;
         float height = brect.height()/72;
         QString strWidth;

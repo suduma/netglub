@@ -35,7 +35,7 @@ CONFIG += debug console
 TARGET = netglub
 RESOURCES += qng.qrc
 
-unix { 
+unix {
     OBJECTS_DIR = build/build-unix
     MOC_DIR = build/moc-unix
     UI_DIR = build/uic-unix
@@ -52,19 +52,19 @@ unix:debug {
     DEFINES += _Debug
 }
 
-macx { 
+macx {
     OBJECTS_DIR = build/build-macx
     MOC_DIR = build/moc-macx
     UI_DIR = build/uic-macx
     RCC_DIR = build/rcc-macx
     LIBS += -lz
     release:DESTDIR = bin/macx-release
-    debug { 
+    debug {
         DESTDIR = bin/macx-debug
         DEFINES += _Debug
     }
 }
-win32 { 
+win32 {
     OBJECTS_DIR = build/build-win
     MOC_DIR = build/moc-win32
     UI_DIR = build/uic-win32
@@ -105,9 +105,10 @@ QT += xml \
     svg \
     script
 LIBS += -lgvc \
-    -lgraph \
+    -lcgraph \
     -lpathplan \
-    -lcdt
+    -lcdt \
+    -lz
 
 # Input
 HEADERS += src/edgeitem.h \
@@ -209,4 +210,3 @@ SOURCES += src/edgeitem.cpp \
     src/quazip/quazip.cpp \
     src/quazip/ioapi.c \
     src/filemanager.cpp
-
