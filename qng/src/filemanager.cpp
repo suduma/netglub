@@ -215,7 +215,7 @@ QString FileManager::createTmpDirFromNtg(Graph* graph, QString fileName)
     if (!tmp.cd(QString::number(graph->getGraphId(),10)))
     {
         if (!createTmpFile(graph))
-            return false;
+            return "";
         tmp.cd(QString::number(graph->getGraphId(),10));
     }
 
